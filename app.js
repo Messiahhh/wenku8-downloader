@@ -76,10 +76,10 @@ fs.readFile('./wenku.json', 'utf-8', (err, data) => {
     function loop() {
         if (i < data.length) {
             Promise.all([download(data[i])]).then((data) => {
-                setTimeout(function () {
+                // setTimeout(function () {
                     i++
                     loop()
-                }, 200)
+                // }, 200)
             }).catch((err) => {
                 console.log(err)
             })
