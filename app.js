@@ -5,7 +5,7 @@ const fs = require('fs')
 const http = require('http')
 
 function download (url) {
-    axios.get(url, {
+    return axios.get(url, {
         responseType: 'arraybuffer'
     })
     .then((res) => {
@@ -76,10 +76,8 @@ fs.readFile('./wenku.json', 'utf-8', (err, data) => {
     function loop() {
         if (i < data.length) {
             Promise.all([download(data[i])]).then((data) => {
-                // setTimeout(function () {
-                    i++
-                    loop()
-                // }, 200)
+                i++
+                loop()
             }).catch((err) => {
                 console.log(err)
             })
@@ -88,7 +86,7 @@ fs.readFile('./wenku.json', 'utf-8', (err, data) => {
             console.log(`
                 -----
                 -----
-                任务已经完成
+                ===下载任务已经完成===
                 -----
                 -----
             `)
