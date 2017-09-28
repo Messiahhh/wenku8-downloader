@@ -1,6 +1,6 @@
 ### [www.wenku8.com](http://www.wenku8.com/) 轻小说文库 批量爬虫
 
-
+### 一个基于axios, cheerio, iconv-lite的微型爬虫
 
 #### 安装
 
