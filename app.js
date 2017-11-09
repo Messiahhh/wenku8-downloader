@@ -1,70 +1,85 @@
+const Promise = require('bluebird')
 const axios = require('axios')
 const cheerio = require('cheerio')
 const iconv = require('iconv-lite')
-const fs = require('fs')
-const http = require('http')
+const fs = Promise.promisifyAll(require('fs'))
+let q = 0
+class Novel {
+    constructor(obj) {
+        Object.assign(this, obj)
+        this.links = []
+    }
+    
+    async mkdir() {
+        if (fs.exists(`./novels/${this.id}`)) {
+            return
+        }
+        else {
+            await fs.mkdirAsync(`./novels/${this.id}`, '0777')
+        }
+    }
 
-function download (url) {
-    return axios.get(url, {
-        responseType: 'arraybuffer'
-    })
-    .then((res) => {
-        //小说的章节详情
-        
-        let links = []
-        let catalogue = ''
-        let count = 1
-        let baseUrl = url.substring(0, url.lastIndexOf('/'))
-        let promiseArr = []
-
-        let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
-        //小说名
-        let novelName = $('#title').text()
-        let novelPath = `../novels/${novelName}.md`
-        let id = 1
-        $('.ccss a').each((index, item) => {
-            //单章链接，标题
-            let url = $(item).attr('href')
-            let title = $(item).text()
-            
-            links.push({
-                id: id++,
-                url: `${baseUrl}/${url}`,
-                title,
-            })
-            catalogue += `* [${title}](#${title})\n`
-        })
-        fs.mkdir(`./novels/${novelName}`, 0777, (err) => {
-            if (err) console.log(err)
-        })
-        links.forEach(({id, url, title}, index) => {
-            let promise = axios.get(url, {
+    async download() {
+        this.links.forEach(async ({
+            id,
+            title,
+            url,
+        }, index) => {
+            let res = await axios.get(url, {
                 responseType: 'arraybuffer'
-            })
-            .then((res) => {
-                let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
-                let content = $('#content').text()
-                
-                fs.writeFile(`./novels/${novelName}/第${id}章.txt`, `${title}${content}`, (err) => {
-                    if (err) console.log(err)
-                    console.log(`${novelName}第${id}章下载完成`)
-                })
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-            promiseArr.push(promise)
+            }).catch(e => console.log(e))
+            
+            console.log(q++)
+            let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
+            let content = $('#content').text()
+            fs.writeFileAsync(`./novels/${this.id}/${id}.txt`, `${title}${content}`)
+            
         })
-        return Promise.all(promiseArr).then((data) => {
-            console.log(`${novelName}已下载完成`)
-        }).catch((err) => {
-            console.log(err)
+    }
+
+    static async Init() {
+        if (fs.exists('novels')) {
+            return
+        }
+        else {
+            await fs.mkdir('novels', '0777')
+        }
+    }
+}
+
+async function download (url) {
+    //预处理
+    let baseUrl = url.substring(0, url.lastIndexOf('/'))
+    let book_id = Math.floor(Math.random() * 200000)
+    let page_id = 1
+    let res = await axios.get(url, {
+        responseType: 'arraybuffer'
+    }).catch(e => console.log(e))
+    console.log(q++)
+    let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
+    let novel = new Novel({
+        id: book_id,
+        url,
+        name: $('#title').text(),
+        author: $('#info').text().slice(3)
+    })
+    $('.ccss a').each((index, item) => {
+        let url = $(item).attr('href')
+        let title = $(item).text()
+        novel.links.push({
+            id: page_id++,
+            title,            
+            url: `${baseUrl}/${url}`
         })
     })
-    .catch((err) => {
-        console.log(err)
+    novel.mkdir()
+    novel.download().then(() => {
+        // console.log(`${novel.name}已经下载完成`)
+    }).catch(e => {
+        console.log(e)
     })
 }
+
 
 
 fs.readFile('./wenku.json', 'utf-8', (err, data) => {
@@ -77,7 +92,7 @@ fs.readFile('./wenku.json', 'utf-8', (err, data) => {
         if (i < data.length) {
             Promise.all([download(data[i])]).then((data) => {
                 i++
-                loop()
+                setTimeout(loop, 1600)
             }).catch((err) => {
                 console.log(err)
             })
