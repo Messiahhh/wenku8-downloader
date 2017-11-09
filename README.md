@@ -39,7 +39,7 @@ wenku.json的结构类似
 test.js提供了一个生成wenku.json的实例，用来爬取十年左右的'这本轻小说真厉害啊！'获奖作品
 
 
-####更新
+#### 更新
 2017/11/9
  - 用async改写了原来的download函数
  - 事实上，需要一个很好的控制算法， 不然程序一下子请求数量太多， 会出现 Error: connect ETIMEDOUT 这样的错误

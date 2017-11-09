@@ -3,7 +3,7 @@ const axios = require('axios')
 const cheerio = require('cheerio')
 const iconv = require('iconv-lite')
 const fs = Promise.promisifyAll(require('fs'))
-let q = 0
+
 class Novel {
     constructor(obj) {
         Object.assign(this, obj)
@@ -28,8 +28,6 @@ class Novel {
             let res = await axios.get(url, {
                 responseType: 'arraybuffer'
             }).catch(e => console.log(e))
-            
-            console.log(q++)
             let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
             let content = $('#content').text()
             fs.writeFileAsync(`./novels/${this.id}/${id}.txt`, `${title}${content}`)
@@ -55,7 +53,6 @@ async function download (url) {
     let res = await axios.get(url, {
         responseType: 'arraybuffer'
     }).catch(e => console.log(e))
-    console.log(q++)
     let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
     let novel = new Novel({
         id: book_id,
