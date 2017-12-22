@@ -7,6 +7,43 @@ const url = require('url')
 let index = 'http://www.wenku8.com/index.php'
 let indexHost = 'www.wenku8.com'
 
+let pageArr = []
+// async function getNovelsUrl() {
+//     let res = await axios.get(index, {
+        headers: {
+            cookie: 'jieqiUserInfo=jieqiUserId%3D312317%2CjieqiUserName%3D2497360927%2CjieqiUserGroup%3D3%2CjieqiUserVip%3D0%2CjieqiUserName_un%3D2497360927%2CjieqiUserHonor_un%3D%26%23x65B0%3B%26%23x624B%3B%26%23x4E0A%3B%26%23x8DEF%3B%2CjieqiUserGroupName_un%3D%26%23x666E%3B%26%23x901A%3B%26%23x4F1A%3B%26%23x5458%3B%2CjieqiUserLogin%3D1506504225; jieqiVisitInfo=jieqiUserLogin%3D1506504225%2CjieqiUserId%3D312317; Hm_lvt_acfbfe93830e0272a88e1cc73d4d6d0f=1506503189;    Hm_lpvt_acfbfe93830e0272a88e1cc73d4d6d0f=1506504664; PHPSESSID=fplbbhg8ls6cn280v40psqksi762sjad; Hm_lvt_d72896ddbf8d27c750e3b365ea2fc902=1506503189; Hm_lpvt_d72896ddbf8d27c750e3b365ea2fc902=1506520070'
+        },
+//         responseType: 'arraybuffer'
+//     })
+//     let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
+//     $('#left .ultop a').each(async (index, item) => {
+//             let url = $(item).attr('href')
+//             let res = await axios.get(url, {
+//                 headers: {
+//                     responseType: 'arraybuffer'
+//                 }
+//             })
+//             let $ = cheerio.load(iconv.decode(res.data, 'gbk'))
+//             $('#centerm a').each((index, item) => {
+//                 let pageUrl = $(item).attr('href')
+//                 novelArr.add(pageUrl)
+//             })
+//     })
+// }
+//
+// getNovelsUrl()
+//
+
+
+
+
+
+
+
+
+
+
+
 axios.get(index, {
     headers: {
         cookie: 'jieqiUserInfo=jieqiUserId%3D312317%2CjieqiUserName%3D2497360927%2CjieqiUserGroup%3D3%2CjieqiUserVip%3D0%2CjieqiUserName_un%3D2497360927%2CjieqiUserHonor_un%3D%26%23x65B0%3B%26%23x624B%3B%26%23x4E0A%3B%26%23x8DEF%3B%2CjieqiUserGroupName_un%3D%26%23x666E%3B%26%23x901A%3B%26%23x4F1A%3B%26%23x5458%3B%2CjieqiUserLogin%3D1506504225; jieqiVisitInfo=jieqiUserLogin%3D1506504225%2CjieqiUserId%3D312317; Hm_lvt_acfbfe93830e0272a88e1cc73d4d6d0f=1506503189; Hm_lpvt_acfbfe93830e0272a88e1cc73d4d6d0f=1506504664; PHPSESSID=fplbbhg8ls6cn280v40psqksi762sjad; Hm_lvt_d72896ddbf8d27c750e3b365ea2fc902=1506503189; Hm_lpvt_d72896ddbf8d27c750e3b365ea2fc902=1506520070'
@@ -53,8 +90,8 @@ axios.get(index, {
         let promiseArr = []
         let urls = new Set()
         for (let i of data) {
-            
-            
+
+
             if (url.parse(i).hostname === indexHost) {
                 let promise = axios.get(i, {
                     responseType: 'arraybuffer'
@@ -96,4 +133,3 @@ axios.get(index, {
 .catch((err) => {
     console.log(err)
 })
-
