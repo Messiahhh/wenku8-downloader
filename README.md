@@ -1,50 +1,37 @@
-### [www.wenku8.com](http://www.wenku8.com/) 轻小说文库 批量爬虫
+[www.wenku8.com](http://www.wenku8.com/) 轻小说文库爬虫
+=======================================================
 
-### 一个基于axios, cheerio, iconv-lite的微型爬虫
+#### 基于axios, async, cheerio, iconv-lite
 
-#### 安装
-在根目录下新建一个文件夹'novels'
+#### 使用
+
+在根目录下新建一个文件夹'novels', 并修改lib.js中的cookie变量， 改成你自己的cookie值
 
 ```
 $npm install
 $node app.js
-
 ```
 
 #### API
 
-download 函数， 接受小说的目录URL， 结构如http://www.wenku8.com/novel/2/2017/index.htm，爬取单本小说
+lib.js
 
+- Novel.download 接受一个形如'http://www.wenku8.com/book/2111.htm' 这样的小说目录链接， 调用后会自动下载这本小说。
 
+app.js
 
-app.js 可以通过wenku.json进行批量的爬取
-
-
-
-wenku.json的结构类似
-
-```
-
-[
-    "http://www.wenku8.com/novel/2/2193/index.htm",
-    "http://www.wenku8.com/novel/1/1787/index.htm",
-    "http://www.wenku8.com/novel/1/1297/index.htm",
-    "http://www.wenku8.com/novel/2/2065/index.htm",
-    "http://www.wenku8.com/novel/1/1705/index.htm",
-    "http://www.wenku8.com/novel/0/473/index.htm",
-]
-
-```
-
-test.js提供了一个生成wenku.json的实例，用来爬取十年左右的'这本轻小说真厉害啊！'获奖作品
-
+- 这个脚本主要是用来获取历年的'这本轻小说真厉害啊！'的获奖作品并批量下载
 
 #### 更新
-2017/11/9
- - 用async改写了原来的download函数
- - 事实上，需要一个很好的控制算法， 不然程序一下子请求数量太多， 会出现 Error: connect ETIMEDOUT 这样的错误
+
+2017/11/9 
+
+- 用async改写了原来的download函数
+- 事实上，需要一个很好的控制算法， 不然程序一下子请求数量太多， 会出现 Error: connect ETIMEDOUT 这样的错误 
 
 
+2017/12/25
 
-
+- 重写了代码， 还是async， 代码量大大减少
+- 使用了Promise.map， 其中设置了{ concurrency: 10 }， 从而设置了并发的数量， 防止服务挂掉。（大概是没问题了
 
