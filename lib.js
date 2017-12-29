@@ -6,7 +6,7 @@ const fs = Promise.promisifyAll(require('fs'))
 const Url = require('url')
 const qs = require('querystring')
 //your cookie
-let cookie = 'put your cookie here'
+let cookie = 'Hm_lvt_d72896ddbf8d27c750e3b365ea2fc902=1514128783,1514170772,1514188242,1514548955; PHPSESSID=opgadrpqq3e0hag14l0n2lgb7vd01a3l; jieqiUserInfo=jieqiUserId%3D312317%2CjieqiUserName%3D2497360927%2CjieqiUserGroup%3D3%2CjieqiUserVip%3D0%2CjieqiUserName_un%3D2497360927%2CjieqiUserHonor_un%3D%26%23x65B0%3B%26%23x624B%3B%26%23x4E0A%3B%26%23x8DEF%3B%2CjieqiUserGroupName_un%3D%26%23x666E%3B%26%23x901A%3B%26%23x4F1A%3B%26%23x5458%3B%2CjieqiUserLogin%3D1514548954; jieqiVisitInfo=jieqiUserLogin%3D1514548954%2CjieqiUserId%3D312317; Hm_lvt_acfbfe93830e0272a88e1cc73d4d6d0f=1514137878,1514170784,1514188251,1514549990; Hm_lpvt_acfbfe93830e0272a88e1cc73d4d6d0f=1514549990; jieqiVisitId=article_articleviews%3D2111%7C2346%7C1159; Hm_lpvt_d72896ddbf8d27c750e3b365ea2fc902=1514549998'
 
 class Novel {
     constructor(obj) {
@@ -48,7 +48,7 @@ class Novel {
             id = `1-${qs.parse(Url.parse(url).query).id}`
         }
         else {
-            id = `0-${backUrl}`
+            id = `2-${backUrl}`
         }
         let novel = new Novel({
             id,
@@ -66,13 +66,13 @@ class Novel {
             // $('table td a').map() return a cheerio Object rather than, which can't be used in Promise.all. So we need to add a get() after .map()
             await Promise.all($('table td a').map(async (index, item) => {
                 let url = `${catalogBaseUrl}/${$(item).attr('href')}`
+                let title = $(item).text()
                 let $$ = await this.get(url)
-                await fs.writeFileAsync(`./novels/${novel.id}/${index+1}.md`, $$('#content').text())
-                // if ($('table td a').length === index + 1) {
-                    console.log(`${novel.name}[id=${novel.id}]${index+1}章节已下载完成`)
-                // }
+                await fs.writeFileAsync(`./novels/${novel.id}/${index+1}.md`, `${title}\n` + $$('#content').text().replace('本文来自 轻小说文库(http://www.wenku8.com)', '').replace('台版 转自 轻之国度', '').replace('最新最全的日本动漫轻小说 轻小说文库(http://www.wenku8.com) 为你一网打尽！', ''))
+                console.log(`${novel.name}[id=${novel.id}]第${index+1}章节已下载完成`)
             }).get())
         }
     }
 }
 module.exports = Novel
+// Novel.download('http://www.wenku8.com/book/1715.htm')

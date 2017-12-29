@@ -22,7 +22,7 @@ const getNovelsUrl = async (url) => {
     set = Array.from(set)
     await Promise.map(set, function (url) {
         return Novel.download(url)
-    }, { concurrency: 10 })
+    }, { concurrency: 8 })
     // await Promise.all(set.map(async (item, index) => {
     //     // console.log(item)
     //     await Novel.download(item)
