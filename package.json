@@ -1,17 +1,21 @@
 {
-  "name": "wenku8",
-  "version": "1.0.0",
-  "description": "Novel downloader in wenku8 ",
+  "name": "wenku8-downloader",
+  "version": "1.0.1",
+  "description": "轻小说下载器",
   "main": "index.js",
+  "bin": {
+    "wenku8": "index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "messiah",
-  "license": "ISC",
+  "author": "Akara",
+  "license": "MIT",
   "dependencies": {
     "axios": "^0.16.2",
     "bluebird": "^3.5.1",
     "cheerio": "^1.0.0-rc.2",
+    "commander": "^5.1.0",
     "iconv-lite": "^0.4.19"
   }
 }
