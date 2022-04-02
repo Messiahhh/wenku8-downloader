@@ -17,7 +17,8 @@ program.parse(process.argv);
 if (program.url) {
     Novel.download(program.url);
 } else if (program.id) {
-    program.id.forEach(element => {
+    let s = new Set(program.id)
+    s.forEach(element => {
         Novel.download(`https://www.wenku8.net/book/${element}.htm`)
     });
 } else {
