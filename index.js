@@ -3,7 +3,7 @@ const Novel = require("./lib/downloader.js");
 
 const { program } = require("commander");
 
-function commaSeparatedList(value, dummyPrevious) {
+function commaSeparatedList(value) {
     return value.split(',');
 }
 

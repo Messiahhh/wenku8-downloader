@@ -7,7 +7,8 @@
     "wenku8": "index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "index.js -s -p $PORT"
   },
   "author": "Akara",
   "license": "MIT",
