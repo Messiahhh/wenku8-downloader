@@ -2,21 +2,40 @@
   "name": "wenku8-downloader",
   "version": "2.0.0",
   "description": "轻小说下载器",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "type": "module",
   "bin": {
-    "wenku8": "index.js"
+    "wenku8": "dist/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "index.js -s -p $PORT"
+    "start": "tsc && chmod +x ./dist/index.js && dist/index.js"
   },
   "author": "Akara",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.18.1",
+    "axios": "^0.27.2",
     "bluebird": "^3.5.1",
+    "chalk": "^5.0.1",
     "cheerio": "^1.0.0-rc.2",
-    "commander": "^5.1.0",
-    "iconv-lite": "^0.4.19"
+    "cli-table3": "^0.6.2",
+    "commander": "^9.4.0",
+    "iconv-lite": "^0.4.19",
+    "inquirer": "^9.1.1",
+    "node-fetch": "^3.2.10",
+    "ora": "^6.1.2",
+    "typescript": "^4.8.2"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.31",
+    "@types/iconv": "^3.0.1",
+    "@types/inquirer": "^9.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.36.1",
+    "@typescript-eslint/parser": "^5.36.1",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.23.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1"
   }
 }
