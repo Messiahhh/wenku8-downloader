@@ -1,4 +1,4 @@
 node_modules
 novels/*
-dist/*
+dist
 wenku8-error.log
