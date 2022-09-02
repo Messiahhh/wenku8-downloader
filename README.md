@@ -1,40 +1,57 @@
-轻小说文库爬虫/下载器
+轻小说文库下载器
 =======================================================
 
-下载[轻小说文库](http://www.wenku8.net/index.php)站点上的轻小说的一款命令行工具。
+## 介绍
 
-#### 使用方式
+用于下载[轻小说文库](https://www.wenku8.net/index.php)的小说，支持搜索功能、支持已下架小说的下载，如无职转生
+
+
+
+## 安装
+
+需要[NodeJs环境](https://nodejs.org/en/)
+
+### 全局安装
 
 ``` shell
-npm install wenku8-downloader -g
-wenku8 -u <your-url> # 比如 wenku8 -u https://www.wenku8.net/book/2312.htm
+npm install wenku8 -g # yarn global add wenku8-downloader 
+wenku8 
 ```
 
 
 
-这里的url指的是轻小说文库网站中，某个具体小说的目录页。
+### 本地安装
+
+``` shell
+npm install wenku8 -D # yarn add wenku8-downloader -D
+npx wenku8
+```
 
 
 
-### 需求单
+## 使用
+
+![image-20220902181823815](./assets/image-20220902181823815.png)
+
+![](assets/screenshot-20220902-182258.png)
+
+![](assets/screenshot-20220902-182148.png)
+
+![](assets/screenshot-20220902-182437.png)
 
 
 
-查询
+## 自定义
 
-- [ ] 根据小说名、作者名进行搜索
-- [ ] 根据年份查询
-- [ ] 本月热榜、今日热榜
+![](assets/screenshot-20220902-182841.png)
 
 
 
-获取小说详情
-
-- [ ] 获取小说详细数据，包括章节
 
 
+## 贡献者
 
-下载整本小说、下载单章小说
-
-
+<a href="https://github.com/Messiahhh/wenku8-downloader/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Messiahhh/wenku8-downloader" />
+</a>
 
