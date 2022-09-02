@@ -10,6 +10,9 @@
   "scripts": {
     "start": "tsc && chmod +x ./dist/index.js && dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "author": "Akara",
   "license": "MIT",
   "dependencies": {
