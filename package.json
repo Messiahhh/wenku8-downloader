@@ -1,6 +1,6 @@
 {
   "name": "wenku8-downloader",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "轻小说下载器",
   "main": "dist/index.js",
   "type": "module",
