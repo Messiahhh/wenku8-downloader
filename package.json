@@ -1,7 +1,7 @@
 {
   "name": "wenku8",
   "version": "3.1.0",
-  "description": "轻小说下载器",
+  "description": "轻小说文库下载器",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
@@ -14,6 +14,10 @@
     "dist"
   ],
   "author": "Akara",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Messiahhh/wenku8-downloader"
+  },
   "license": "MIT",
   "dependencies": {
     "axios": "^0.27.2",
