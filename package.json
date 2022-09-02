@@ -18,6 +18,17 @@
     "type": "git",
     "url": "https://github.com/Messiahhh/wenku8-downloader"
   },
+  "keywords": [
+    "cli",
+    "command-line",
+    "terminal",
+    "console",
+    "crawler",
+    "wenku",
+    "wenku8",
+    "轻小说",
+    "轻小说文库"
+  ],
   "license": "MIT",
   "dependencies": {
     "axios": "^0.27.2",
