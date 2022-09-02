@@ -14,7 +14,7 @@
 ### 全局安装
 
 ``` shell
-npm install wenku8 -g # yarn global add wenku8-downloader 
+npm install wenku8 -g # yarn global add wenku8
 wenku8 
 ```
 
@@ -23,7 +23,7 @@ wenku8
 ### 本地安装
 
 ``` shell
-npm install wenku8 -D # yarn add wenku8-downloader -D
+npm install wenku8 -D # yarn add wenku8 -D
 npx wenku8
 ```
 
