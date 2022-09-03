@@ -1,4 +1,5 @@
 declare module 'epub-gen-honor';
+declare module 'epub-gen-loose';
 
 interface INovel {
     novelId: number;
@@ -48,4 +49,5 @@ interface CommandOptions {
     onlyImages: boolean;
     outDir: string;
     verbose: boolean;
+    strict: boolean;
 }

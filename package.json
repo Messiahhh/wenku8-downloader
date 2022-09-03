@@ -39,6 +39,7 @@
     "cli-table3": "^0.6.2",
     "commander": "^9.4.0",
     "epub-gen-honor": "^1.0.5",
+    "epub-gen-loose": "^0.1.0",
     "iconv-lite": "^0.4.19",
     "inquirer": "^9.1.1",
     "ora": "^6.1.2",

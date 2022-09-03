@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import { Scheduler, retryFn } from './utils/Scheduler.js';
 import { fetch } from './utils/fetch.js';
 import Epub from 'epub-gen-honor';
+import EpubLoose from 'epub-gen-loose';
 
 const BASE_URL = 'https://www.wenku8.net/book/';
 const spinner = ora();
@@ -163,7 +164,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
             const { minutes, seconds } = endCount();
             if (options.epub) {
                 spinner.start(`正在生成epub电子书，请稍等...`);
-                await new Epub(
+                await new (options.strict ? Epub : EpubLoose)(
                     {
                         ...epubOptions,
                         content: epubOptions.content.map(item => ({
