@@ -98,7 +98,3 @@ npm start -- --no-epub --onlyImages
 
 
 
-
-### 免责声明
-
-本工具
