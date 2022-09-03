@@ -275,10 +275,13 @@ async function downloadChapter(chapterUrl: string, options: CommandOptions) {
 
         try {
             const $ = await fetch(`http://dl.wenku8.com/pack.php?aid=${v.slice(-2)[0]}&vid=${v.slice(-1)[0]}`, 'utf-8');
-            content = $('body')
-                .text()
-                .replace('&nbsp;', '')
-                .replace('更多精彩热门日本轻小说、动漫小说，轻小说文库(http://www.wenku8.com) 为你一网打尽！', '');
+            content =
+                (options.epub ? $('body').html() : $('body').text())
+                    ?.replace('&nbsp;', '')
+                    .replace(
+                        '更多精彩热门日本轻小说、动漫小说，轻小说文库(http://www.wenku8.com) 为你一网打尽！',
+                        ''
+                    ) || '';
         } catch (error) {
             if (error.message.indexOf('404') !== -1) {
                 const res = await axios.get(
