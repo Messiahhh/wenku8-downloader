@@ -22,7 +22,8 @@ program
     .option('--no-epub', '不生成epub电子书', true)
     .option('--ext <value>', '不生成epub电子书时，默认生成markdown文件，可以修改该后缀', 'md')
     .option('--onlyImages', '只下载小说的插图', false)
-    .option('-o, --out-dir <value>', '指定小说放置目录，默认在当前目录下生成', './novels');
+    .option('-o, --out-dir <value>', '指定小说放置目录，默认在当前目录下生成', './novels')
+    .option('--verbose', '显示更多日志', false);
 
 program.parse(process.argv);
 const options: CommandOptions = program.opts();

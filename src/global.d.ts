@@ -47,4 +47,5 @@ interface CommandOptions {
     ext: string;
     onlyImages: boolean;
     outDir: string;
+    verbose: boolean;
 }

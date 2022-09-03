@@ -37,6 +37,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
             tocTitle: '目录',
             lang: 'cn',
             content: [] as { title: string; data: any[] }[],
+            verbose: options.verbose,
         };
 
         if (novel.catalogueUrl) {
