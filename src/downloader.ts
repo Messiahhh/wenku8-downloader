@@ -1,121 +1,19 @@
 import axios from 'axios';
-import cheerio from 'cheerio';
 import iconv from 'iconv-lite';
 import fs from 'fs';
 import path from 'path';
 import util from 'util';
-import { retryFn, Scheduler } from './utils/Scheduler.js';
 import ora from 'ora';
 import chalk from 'chalk';
+import { Scheduler, retryFn } from './utils/Scheduler.js';
+import { fetch } from './utils/fetch.js';
+import Epub from 'epub-gen-honor';
+
+const BASE_URL = 'https://www.wenku8.net/book/';
 const spinner = ora();
-
-// spinner.start();
-interface INovel {
-    novelId: number;
-    novelName: string;
-    /**
-     * 文库分类
-     */
-    library: string;
-    /**
-     * 小说作者
-     */
-    author: string;
-    /**
-     * 是否完结
-     */
-    status: string;
-    /**
-     * 最后更新时间
-     */
-    lastUpdateTime: string;
-    /**
-     * 全文长度
-     */
-    length: string;
-    /**
-     * 小说标签
-     */
-    tag: string;
-    /**
-     * 最新章节
-     */
-    recentChapter: string;
-    /**
-     * 内容简介
-     */
-    desc: string;
-    /**
-     * 目录链接
-     */
-    catalogueUrl?: string;
-}
-
+const scheduler = new Scheduler(5);
 const writeFile = util.promisify(fs.writeFile);
 const appendFile = util.promisify(fs.appendFile);
-
-const scheduler = new Scheduler(5);
-
-const HOST = 'https://www.wenku8.net';
-const BASE_URL = 'https://www.wenku8.net/book/';
-
-/**
- * 获取小说详细信息
- * @param novelId
- * @returns
- */
-export async function getNovelDetails(novelId: number): Promise<INovel> {
-    const $ = await fetch(`${BASE_URL}${novelId}.htm`);
-
-    const novelName = $('#content').children().first().children().first().find('table tbody tr td span b').text();
-    const [library, author, status, lastUpdateTime, length] = $('#content')
-        .children()
-        .first()
-        .children()
-        .first()
-        .children()
-        .first()
-        .children()
-        .eq(1)
-        .children()
-        .map((i, item) => {
-            return $(item)
-                .text()
-                .match(/：(.+)$/)![1];
-        })
-        .get();
-    const centerEl = $('#content').children().first().children().eq(3).find('table tbody tr td').eq(1);
-    const tag = centerEl
-        .find('span')
-        .first()
-        .text()
-        .match(/：(.+)$/)![1];
-    const recentChapter = centerEl.find('span').eq(3).text();
-    const desc = centerEl.find('span').last().text();
-    const catalogueUrl = $('#content')
-        .children()
-        .first()
-        .children()
-        .eq(5)
-        .children()
-        .children()
-        .first()
-        .find('a')
-        .attr('href');
-    return {
-        novelId,
-        novelName,
-        library,
-        author,
-        status,
-        lastUpdateTime,
-        length,
-        tag,
-        recentChapter,
-        desc,
-        catalogueUrl,
-    };
-}
 
 /**
  * 根据小说ID，下载全部小说
@@ -133,10 +31,17 @@ export async function downloadNovel(
     try {
         const startTime = Date.now();
         let errorTimes = 0;
+
         spinner.start('正在请求小说详情页');
 
         const novel = await getNovelDetails(novelId);
         spinner.succeed('成功请求小说详情页');
+
+        const epubOptions = {
+            title: novel.novelName,
+            author: novel.author,
+            content: [] as { title: string; data: any[] }[],
+        };
 
         if (novel.catalogueUrl) {
             spinner.start('正在请求小说目录页');
@@ -145,6 +50,10 @@ export async function downloadNovel(
             let count = 0;
             spinner.succeed(`成功请求小说目录页，该小说共有${volumes.length}卷`);
             for (const volume of volumes) {
+                epubOptions.content.push({
+                    title: volume.name,
+                    data: [],
+                });
                 const volumeNameWithIndex = `${volume.index + 1}-${volume.name}`;
                 if (!fs.existsSync(path.join(process.cwd(), options.outDir, novel.novelName, volumeNameWithIndex))) {
                     fs.mkdirSync(
@@ -178,6 +87,7 @@ export async function downloadNovel(
                                                     axios.get(imageUrl, { responseType: 'arraybuffer' })
                                                 );
                                                 spinner.succeed(`${volume.name}-${chapterTitle}-${imagePath}下载完成`);
+
                                                 return writeFile(
                                                     path.join(
                                                         process.cwd(),
@@ -201,7 +111,7 @@ export async function downloadNovel(
                                         });
                                     }
                                 }
-
+                                epubOptions.content[volume.index].data[chapterIndex] = `# ${chapterTitle}\n` + content;
                                 await writeFile(
                                     path.join(
                                         process.cwd(),
@@ -236,6 +146,7 @@ export async function downloadNovel(
             await scheduler.onFinish();
             const minutes = ((Date.now() - startTime) / 1000 / 60).toFixed();
             const seconds = (((Date.now() - startTime) / 1000) % 60).toFixed();
+            // console.log(epubOptions);
             console.log(
                 chalk.bold.green(`『 ${novel.novelName} 』` + '下载完成!' + `总共用时${minutes}分${seconds}秒`)
             );
@@ -380,6 +291,64 @@ async function downloadChapter(chapterUrl: string) {
 }
 
 /**
+ * 获取小说详细信息
+ * @param novelId
+ * @returns
+ */
+export async function getNovelDetails(novelId: number): Promise<INovel> {
+    const $ = await fetch(`${BASE_URL}${novelId}.htm`);
+
+    const novelName = $('#content').children().first().children().first().find('table tbody tr td span b').text();
+    const [library, author, status, lastUpdateTime, length] = $('#content')
+        .children()
+        .first()
+        .children()
+        .first()
+        .children()
+        .first()
+        .children()
+        .eq(1)
+        .children()
+        .map((i, item) => {
+            return $(item)
+                .text()
+                .match(/：(.+)$/)![1];
+        })
+        .get();
+    const centerEl = $('#content').children().first().children().eq(3).find('table tbody tr td').eq(1);
+    const tag = centerEl
+        .find('span')
+        .first()
+        .text()
+        .match(/：(.+)$/)![1];
+    const recentChapter = centerEl.find('span').eq(3).text();
+    const desc = centerEl.find('span').last().text();
+    const catalogueUrl = $('#content')
+        .children()
+        .first()
+        .children()
+        .eq(5)
+        .children()
+        .children()
+        .first()
+        .find('a')
+        .attr('href');
+    return {
+        novelId,
+        novelName,
+        library,
+        author,
+        status,
+        lastUpdateTime,
+        length,
+        tag,
+        recentChapter,
+        desc,
+        catalogueUrl,
+    };
+}
+
+/**
  * 根据小说名称或者作者名称，获取到小说列表
  */
 export async function search(
@@ -414,7 +383,7 @@ export async function search(
         .map((_i, item) => {
             const novelName = $(item).find('b').text();
             const href = $(item).find('b a').attr('href')!;
-            const novelId = getNovelId(href as Parameters<typeof getNovelId>[0]);
+            const novelId = extractNovelIdFromUrl(href as Parameters<typeof extractNovelIdFromUrl>[0]);
             return {
                 novelName,
                 novelId,
@@ -454,7 +423,7 @@ export async function getHotList(): Promise<
                 .map((_i, item) => {
                     const novelName = $(item).attr('title');
                     const href = $(item).attr('href');
-                    const novelId = getNovelId(href as Parameters<typeof getNovelId>[0]);
+                    const novelId = extractNovelIdFromUrl(href as Parameters<typeof extractNovelIdFromUrl>[0]);
 
                     return {
                         novelName: `${novelId}.${novelName}`,
@@ -481,7 +450,7 @@ export async function getHotList(): Promise<
                 .map((_i, item) => {
                     const href = $(item).attr('href');
                     const novelName = $(item).attr('title');
-                    const novelId = getNovelId(href as Parameters<typeof getNovelId>[0]);
+                    const novelId = extractNovelIdFromUrl(href as Parameters<typeof extractNovelIdFromUrl>[0]);
                     return {
                         novelName: `${novelId}.${novelName}`,
                         novelId,
@@ -538,25 +507,6 @@ export async function getHotList(): Promise<
     }
 }
 
-export async function test() {
-    // downloadNovel(3254);
-    // search('欢迎');
-
-    // getHotList();
-
-    getNovelDetails(3238);
-}
-
-async function fetch(url: string, encoding = 'gbk'): Promise<cheerio.Root> {
-    const res = await axios.get(url, {
-        responseType: 'arraybuffer',
-        headers: {
-            Cookie: `__51vcke__1xpAUPUjtatG3hli=5a01a941-8433-5b94-9655-52dec0a7b65f; __51vuft__1xpAUPUjtatG3hli=1652628823028; __51uvsct__1xxUOVWpBVjORhzY=1; __51vcke__1xxUOVWpBVjORhzY=c695b41b-df61-595d-ae04-487f396fcc2e; __51vuft__1xxUOVWpBVjORhzY=1652628823037; __51uvsct__1xxUP7WYCXbghcPV=1; __51vcke__1xxUP7WYCXbghcPV=2993057b-8415-5485-a5b0-997d39d4a598; __51vuft__1xxUP7WYCXbghcPV=1652628827348; Hm_lvt_d72896ddbf8d27c750e3b365ea2fc902=1661947884; Hm_lvt_acfbfe93830e0272a88e1cc73d4d6d0f=1661951291; __51vcke__1xtyjOqSZ75DRXC0=c920bc82-ab33-5d86-bad6-9794b1f17261; __51vuft__1xtyjOqSZ75DRXC0=1661953662466; __51uvsct__1xtyjOqSZ75DRXC0=2; __vtins__1xtyjOqSZ75DRXC0=%7B%22sid%22%3A%20%229dec5171-8481-5f82-8d51-89a528cb08f3%22%2C%20%22vd%22%3A%202%2C%20%22stt%22%3A%2026110%2C%20%22dr%22%3A%2026110%2C%20%22expires%22%3A%201662091786393%2C%20%22ct%22%3A%201662089986393%7D; Hm_lpvt_acfbfe93830e0272a88e1cc73d4d6d0f=1662186563; __vtins__1xpAUPUjtatG3hli=%7B%22sid%22%3A%20%22aecb38ff-403a-5b5d-a10a-4cc4dc2be52f%22%2C%20%22vd%22%3A%201%2C%20%22stt%22%3A%200%2C%20%22dr%22%3A%200%2C%20%22expires%22%3A%201662188497125%2C%20%22ct%22%3A%201662186697125%7D; __51uvsct__1xpAUPUjtatG3hli=3; PHPSESSID=8fn9rqvb2knvfeu42h7v60sbd94bil50; jieqiUserInfo=jieqiUserId%3D312317%2CjieqiUserName%3D2497360927%2CjieqiUserGroup%3D3%2CjieqiUserVip%3D0%2CjieqiUserName_un%3D2497360927%2CjieqiUserHonor_un%3D%26%23x65B0%3B%26%23x624B%3B%26%23x4E0A%3B%26%23x8DEF%3B%2CjieqiUserGroupName_un%3D%26%23x666E%3B%26%23x901A%3B%26%23x4F1A%3B%26%23x5458%3B%2CjieqiUserLogin%3D1662186700; jieqiVisitInfo=jieqiUserLogin%3D1662186700%2CjieqiUserId%3D312317; Hm_lpvt_d72896ddbf8d27c750e3b365ea2fc902=1662186706`,
-        },
-    });
-    return cheerio.load(iconv.decode(res.data, encoding));
-}
-
-function getNovelId(href: `https://www.wenku8.net/book/${number}.htm`) {
+function extractNovelIdFromUrl(href: `https://www.wenku8.net/book/${number}.htm`) {
     return +href.match(/(\d+)\.htm$/)![1];
 }

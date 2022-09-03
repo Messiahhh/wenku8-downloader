@@ -5,6 +5,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import Table from 'cli-table3';
 import chalk from 'chalk';
+import { getCookie } from './utils/fetch.js';
 
 enum Questions {
     查看热门小说,
@@ -31,7 +32,10 @@ const options: {
 console.log(
     chalk.green('欢迎使用轻小说文库下载器，本工具源码链接如下：https://github.com/Messiahhh/wenku8-downloader')
 );
-init();
+
+getCookie().then(() => {
+    init();
+});
 
 function init() {
     const questions = [
