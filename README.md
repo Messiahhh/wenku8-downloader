@@ -45,6 +45,10 @@ npx wenku8
 wenku8
 ```
 
+注：目前*epub*电子书的生成是通过第三方库*epub-gen*实现的，处理大容量的小说时可能耗时较长，并存在概率失败的风险，此时建议通过`wenku8 --verbose`命令重新运行，能够得到更多的打印日志来观察具体的情况。本工具后续讲视情况考虑更换*epub*生成工具。
+
+
+
 ![](assets/screenshot-20220903-184109.png)
 
 ![](assets/screenshot-20220903-184223.png)
@@ -94,7 +98,6 @@ npm start -- --no-epub --onlyImages
 <a href="https://github.com/Messiahhh/wenku8-downloader/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Messiahhh/wenku8-downloader" />
 </a>
-
 
 
 

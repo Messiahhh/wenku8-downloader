@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "tsc && chmod +x ./dist/index.js && dist/index.js",
+    "build": "tsc",
     "clear": "rm -rf ./novels"
   },
   "files": [
