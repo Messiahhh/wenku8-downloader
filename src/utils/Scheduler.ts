@@ -18,7 +18,7 @@ export class Scheduler {
         if (this.tasks.length < this.limit) {
             this.amount++;
             const promise = task();
-            promise.then(() => {
+            promise.finally(() => {
                 this.done++;
                 this.tasks.splice(this.tasks.indexOf(promise), 1);
                 const nextTask = this.queue.shift();

@@ -143,6 +143,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                 count++;
                             } catch (error) {
                                 errorTimes++;
+                                count++;
                                 console.log(chalk.red(`${chapterTitle}下载失败`));
                                 return appendFile(
                                     path.join(process.cwd(), 'wenku8-error.log'),
