@@ -22,6 +22,9 @@ const appendFile = util.promisify(fs.appendFile);
  */
 export async function downloadNovel(novelId: number, options: CommandOptions) {
     try {
+        if (!fs.existsSync(path.join(process.cwd(), options.outDir))) {
+            fs.mkdirSync(path.join(process.cwd(), options.outDir));
+        }
         const endCount = startCount();
         let errorTimes = 0;
 
