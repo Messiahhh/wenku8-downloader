@@ -19,15 +19,13 @@ program
     .version('3.0.0')
     .name('轻小说文库下载器')
     .description('在终端实现轻小说的下载')
-    .option('-e, --ext <value>', '指定生成的文件后缀名，默认为md', 'md')
+    .option('--no-epub', '不生成epub电子书', true)
+    .option('--ext <value>', '不生成epub电子书时，默认生成markdown文件，可以修改该后缀', 'md')
+    .option('--onlyImages', '只下载小说的插图', false)
     .option('-o, --out-dir <value>', '指定小说放置目录，默认在当前目录下生成', './novels');
 
 program.parse(process.argv);
-const options: {
-    ext: string;
-    outDir: string;
-    concurrency: string;
-} = program.opts();
+const options: CommandOptions = program.opts();
 
 console.log(
     chalk.green('欢迎使用轻小说文库下载器，本工具源码链接如下：https://github.com/Messiahhh/wenku8-downloader')

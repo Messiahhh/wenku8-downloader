@@ -8,7 +8,8 @@
     "wenku8": "dist/index.js"
   },
   "scripts": {
-    "start": "tsc && chmod +x ./dist/index.js && dist/index.js"
+    "start": "tsc && chmod +x ./dist/index.js && dist/index.js",
+    "clear": "rm -rf ./novels"
   },
   "files": [
     "dist"

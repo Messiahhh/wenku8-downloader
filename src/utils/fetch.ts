@@ -13,7 +13,7 @@ export async function fetch(url: string, encoding = 'gbk'): Promise<cheerio.Root
             Cookie,
         },
     });
-    return cheerio.load(iconv.decode(res.data, encoding));
+    return cheerio.load(iconv.decode(res.data, encoding), { decodeEntities: false });
 }
 
 export async function getCookie() {

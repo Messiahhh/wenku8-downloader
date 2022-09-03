@@ -1,16 +1,9 @@
 declare module 'epub-gen-honor';
 
-declare global {
-    declare let cookie: string;
-}
-
-interface Global {
-    cookie: string;
-}
-
 interface INovel {
     novelId: number;
     novelName: string;
+    cover: string;
     /**
      * 文库分类
      */
@@ -47,4 +40,11 @@ interface INovel {
      * 目录链接
      */
     catalogueUrl?: string;
+}
+
+interface CommandOptions {
+    epub: boolean;
+    ext: string;
+    onlyImages: boolean;
+    outDir: string;
 }
