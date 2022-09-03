@@ -6,7 +6,7 @@ import ora from 'ora';
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getCookie } from './utils/fetch.js';
-import { version } from '../package.json';
+
 enum Questions {
     查看热门小说,
     搜索小说,
@@ -16,7 +16,7 @@ enum Questions {
 
 const program = new Command();
 program
-    .version(version)
+    .version('3.3.3')
     .name('轻小说文库下载器')
     .description('在终端实现轻小说的下载')
     .option('--no-epub', '不生成epub电子书', true)
@@ -28,9 +28,7 @@ program.parse(process.argv);
 const options: CommandOptions = program.opts();
 
 console.log(
-    chalk.green(
-        `欢迎使用轻小说文库下载器V${version}，本工具源码链接如下：https://github.com/Messiahhh/wenku8-downloader`
-    )
+    chalk.green(`欢迎使用轻小说文库下载器，本工具源码链接如下：https://github.com/Messiahhh/wenku8-downloader`)
 );
 
 getCookie().then(() => {
