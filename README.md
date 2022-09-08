@@ -1,6 +1,8 @@
 轻小说文库下载器
 =======================================================
 
+[![npm version](https://badge.fury.io/js/wenku8.svg)](https://badge.fury.io/js/wenku8)
+
 ![](assets/screenshot-20220902-182148.png)
 
 ## 介绍
