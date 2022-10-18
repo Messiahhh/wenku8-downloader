@@ -44,7 +44,7 @@ export class Scheduler {
     }
 }
 
-export async function retryFn<T extends () => Promise<any>>(asyncFn: T, times = 5): Promise<ReturnType<T>> {
+export async function retryFn<T extends () => Promise<any>>(asyncFn: T, times = 10): Promise<ReturnType<T>> {
     try {
         return asyncFn();
     } catch (error) {
