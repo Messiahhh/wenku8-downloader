@@ -7,8 +7,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { Scheduler, retryFn } from './utils/Scheduler.js';
 import { fetch } from './utils/fetch.js';
-import Epub from 'epub-gen-honor';
-import EpubLoose from 'epub-gen-loose';
+import Epub from 'epub-gen-memory';
 
 const BASE_URL = 'https://www.wenku8.net/book/';
 const spinner = ora();
@@ -37,8 +36,12 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
             cover: novel.cover,
             tocTitle: '目录',
             lang: 'cn',
-            content: [] as { title: string; data: any[] }[],
+            content: [] as { title: string; content: any[] }[],
             verbose: options.verbose,
+            fetchTimeout: 2000,
+            retryTimes: 10,
+            batchSize: 5,
+            ignoreFailedDownloads: !options.strict,
         };
 
         if (novel.catalogueUrl) {
@@ -51,7 +54,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                 if (options.epub) {
                     epubOptions.content.push({
                         title: volume.name,
-                        data: [],
+                        content: [],
                     });
                 } else {
                     if (
@@ -122,7 +125,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                     }
                                 }
                                 if (options.epub) {
-                                    epubOptions.content[volume.index].data[chapterIndex] =
+                                    epubOptions.content[volume.index].content[chapterIndex] =
                                         `<h1>${chapterTitle}</h1>` + content;
                                 } else if (!options.onlyImages) {
                                     await writeFile(
@@ -164,16 +167,15 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
             const { minutes, seconds } = endCount();
             if (options.epub) {
                 spinner.start(`正在生成epub电子书，请稍等...`);
-                await new (options.strict ? Epub : EpubLoose)(
-                    {
-                        ...epubOptions,
-                        content: epubOptions.content.map(item => ({
-                            ...item,
-                            data: item.data.join(`\n\n\n\n\n`),
-                        })),
-                    },
-                    path.join(process.cwd(), options.outDir, `${novel.novelName}.epub`)
-                ).promise;
+                const file = await Epub.default(
+                    epubOptions,
+                    epubOptions.content.map(item => ({
+                        ...item,
+                        content: item.content.join(`\n\n\n\n\n`),
+                    }))
+                );
+                await writeFile(path.join(process.cwd(), options.outDir, `${novel.novelName}.epub`), file);
+
                 spinner.stop();
             }
             console.log(
