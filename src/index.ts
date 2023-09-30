@@ -198,12 +198,12 @@ function questionTwo(question: keyof typeof Questions) {
         return inquirer
             .prompt([
                 {
-                    type: 'rawlist',
+                    type: 'list',
                     name: 'id',
                     message: '收藏',
                     choices: favorites.map(({ novelId, novelName, lastRead, lastReadChapter }) => ({
                         value: novelId,
-                        name: `\n${novelId}.${novelName}\n最后更新收藏时间：${lastRead}\n最后更新收藏章节：${lastReadChapter}`,
+                        name: `${novelId}.${novelName}: ${lastRead}: ${lastReadChapter}`,
                     })),
                 },
             ])
