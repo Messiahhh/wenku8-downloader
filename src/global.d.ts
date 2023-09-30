@@ -52,3 +52,10 @@ interface CommandOptions {
     verbose: boolean;
     strict: boolean;
 }
+
+interface FavoriteNovel {
+    novelId: number;
+    novelName: string;
+    lastRead: string;
+    lastReadChapter: string;
+}

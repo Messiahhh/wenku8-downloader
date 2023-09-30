@@ -6,13 +6,19 @@ import ora from 'ora';
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getCookie } from './utils/fetch.js';
+import fs from 'fs';
+import path from 'path';
 
 enum Questions {
     查看热门小说,
     搜索小说,
     下载小说,
+    查看收藏,
     什么也不做,
 }
+
+var favorites = new Array<FavoriteNovel>();
+const favoritesConfigFilePath = path.join(process.cwd(), 'novels', 'favorites.json');
 
 const program = new Command();
 program
@@ -38,6 +44,16 @@ getCookie().then(() => {
 });
 
 function init() {
+    if (fs.existsSync(favoritesConfigFilePath)) {
+        try {
+            const content = fs.readFileSync(favoritesConfigFilePath);
+            const decoder = new TextDecoder();
+            favorites = favorites.concat(JSON.parse(decoder.decode(content)));
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
     const questions = [
         {
             type: 'list',
@@ -47,6 +63,7 @@ function init() {
                 Questions[Questions.查看热门小说],
                 Questions[Questions.搜索小说],
                 Questions[Questions.下载小说],
+                Questions[Questions.查看收藏],
                 Questions[Questions.什么也不做],
             ],
         },
@@ -72,6 +89,12 @@ function questionTwo(question: keyof typeof Questions) {
             promptForDownload();
             break;
         }
+
+        case Questions[Questions.查看收藏]: {
+            promptForFavorites();
+            break;
+        }
+
         default: {
         }
     }
@@ -171,31 +194,45 @@ function questionTwo(question: keyof typeof Questions) {
                 }
             });
     }
+    function promptForFavorites() {
+        return inquirer
+            .prompt([
+                {
+                    type: 'rawlist',
+                    name: 'id',
+                    message: '收藏',
+                    choices: favorites.map(({ novelId, novelName, lastRead, lastReadChapter }) => ({
+                        value: novelId,
+                        name: `\n${novelId}.${novelName}\n最后更新收藏时间：${lastRead}\n最后更新收藏章节：${lastReadChapter}`,
+                    })),
+                },
+            ])
+            .then(async ({ id }) => {
+                promptNovelDetails(id);
+            });
+    }
 }
 
-function promptNovelList(novels: { novelName: string; novelId: number }[], step: keyof typeof Questions) {
-    return inquirer
-        .prompt([
-            {
-                type: 'list',
-                name: 'id',
-                message: '小说详情',
-                choices: novels
-                    .map(({ novelName, novelId }) => ({
-                        value: novelId,
-                        name: novelName,
-                    }))
-                    .concat([{ value: 0, name: '返回上一级' }]),
+async function promptNovelList(novels: { novelName: string; novelId: number }[], step: keyof typeof Questions) {
+    const { id } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'id',
+            message: '小说详情',
+            choices: novels
+                .map(({ novelName, novelId }) => ({
+                    value: novelId,
+                    name: novelName,
+                }))
+                .concat([{ value: 0, name: '返回上一级' }]),
 
-                pageSize: 20,
-            },
-        ])
-        .then(async ({ id }) => {
-            if (!id) {
-                return questionTwo(step);
-            }
-            promptNovelDetails(id);
-        });
+            pageSize: 20,
+        },
+    ]);
+    if (!id) {
+        return questionTwo(step);
+    }
+    promptNovelDetails(id);
 }
 
 async function promptNovelDetails(novelId: number) {
@@ -212,17 +249,45 @@ async function promptNovelDetails(novelId: number) {
     table.push([novelName, author, tag, status, length, lastUpdateTime, recentChapter]);
     console.log('简介：' + desc);
     console.log(table.toString());
+
+    const existsInFavorites = favorites.find(x => x.novelId == novelId) == undefined;
+
     inquirer
         .prompt([
             {
-                type: 'confirm',
-                name: 'type',
-                message: '是否下载该小说？',
+                type: 'list',
+                name: 'choice',
+                message: '选项',
+                choices: [
+                    { name: '下载该小说', value: 0 },
+                    existsInFavorites ? { name: '收藏该小说', value: 1 } : { name: '取消收藏该小说', value: 2 },
+                ],
             },
         ])
-        .then(({ type }) => {
-            if (type) {
-                downloadNovel(novelId, options);
+        .then(({ choice }) => {
+            switch (choice) {
+                case 0:
+                    downloadNovel(novelId, options);
+                    break;
+                case 1:
+                    favorites.push({
+                        novelId: novelId,
+                        novelName: novelName,
+                        lastReadChapter: recentChapter,
+                        lastRead: new Date().toLocaleString(),
+                    });
+                    fs.writeFileSync(favoritesConfigFilePath, JSON.stringify(favorites));
+                    break;
+                case 2:
+                    favorites.forEach((value, index) => {
+                        if (value.novelId == novelId) {
+                            favorites.splice(index, 1);
+                        }
+                    });
+                    fs.writeFileSync(favoritesConfigFilePath, JSON.stringify(favorites));
+                    break;
+                default:
+                    break;
             }
         });
 }

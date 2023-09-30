@@ -1,5 +1,6 @@
 node_modules
 novels/*
+novels
 dist
 wenku8-error.log
 .DS_Store
