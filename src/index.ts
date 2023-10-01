@@ -236,6 +236,15 @@ async function promptNovelList(novels: { novelName: string; novelId: number }[],
 }
 
 async function promptNovelDetails(novelId: number) {
+    let favoriteData: FavoriteNovel | undefined;
+    let existsInFavorites = false;
+    for (let i = 0; i < favorites.length; i++) {
+        if (favorites[i].novelId == novelId) {
+            favoriteData = favorites[i];
+            existsInFavorites = true;
+            break;
+        }
+    }
     const spinner = ora('请求中，请稍等...').start();
     const { novelName, author, status, lastUpdateTime, length, tag, recentChapter, desc } = await getNovelDetails(
         novelId
@@ -249,8 +258,20 @@ async function promptNovelDetails(novelId: number) {
     table.push([novelName, author, tag, status, length, lastUpdateTime, recentChapter]);
     console.log('简介：' + desc);
     console.log(table.toString());
-
-    const existsInFavorites = favorites.find(x => x.novelId == novelId) == undefined;
+    if (existsInFavorites) {
+        const favInfoTable = new Table({
+            head: ['最后更新收藏时间', '最后更新收藏章节', '是否有更新'],
+            wordWrap: true,
+            wrapOnWordBoundary: true,
+        });
+        favInfoTable.push([
+            favoriteData?.lastRead,
+            favoriteData?.lastReadChapter,
+            favoriteData?.lastReadChapter == recentChapter ? '否' : '是',
+        ]);
+        console.log('收藏信息');
+        console.log(favInfoTable.toString());
+    }
 
     inquirer
         .prompt([
@@ -258,10 +279,16 @@ async function promptNovelDetails(novelId: number) {
                 type: 'list',
                 name: 'choice',
                 message: '选项',
-                choices: [
-                    { name: '下载该小说', value: 0 },
-                    existsInFavorites ? { name: '收藏该小说', value: 1 } : { name: '取消收藏该小说', value: 2 },
-                ],
+                choices: [{ name: '下载该小说', value: 0 }]
+                    .concat(
+                        existsInFavorites
+                            ? [
+                                  { name: '取消收藏该小说', value: 2 },
+                                  { name: '更新收藏数据', value: 3 },
+                              ]
+                            : { name: '收藏该小说', value: 1 }
+                    )
+                    .concat({ name: '返回', value: 4 }),
             },
         ])
         .then(({ choice }) => {
@@ -277,14 +304,33 @@ async function promptNovelDetails(novelId: number) {
                         lastRead: new Date().toLocaleString(),
                     });
                     fs.writeFileSync(favoritesConfigFilePath, JSON.stringify(favorites));
+                    init();
                     break;
                 case 2:
-                    favorites.forEach((value, index) => {
-                        if (value.novelId == novelId) {
-                            favorites.splice(index, 1);
+                    for (let i = 0; i < favorites.length; i++) {
+                        if (favorites[i].novelId == novelId) {
+                            favorites.splice(i, 1);
+                            i--;
                         }
-                    });
+                    }
                     fs.writeFileSync(favoritesConfigFilePath, JSON.stringify(favorites));
+                    init();
+                    break;
+                case 3:
+                    for (let i = 0; i < favorites.length; i++) {
+                        if (favorites[i].novelId == novelId) {
+                            favorites[i].novelId = novelId;
+                            favorites[i].novelName = novelName;
+                            favorites[i].lastReadChapter = recentChapter;
+                            favorites[i].lastRead = new Date().toLocaleString();
+                            break;
+                        }
+                    }
+                    fs.writeFileSync(favoritesConfigFilePath, JSON.stringify(favorites));
+                    init();
+                    break;
+                case 4:
+                    init();
                     break;
                 default:
                     break;
