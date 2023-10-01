@@ -48,6 +48,7 @@ function init() {
         try {
             const content = fs.readFileSync(favoritesConfigFilePath);
             const decoder = new TextDecoder();
+            favorites = new Array();
             favorites = favorites.concat(JSON.parse(decoder.decode(content)));
         } catch (e) {
             console.log(e);
@@ -205,6 +206,7 @@ function questionTwo(question: keyof typeof Questions) {
                         value: novelId,
                         name: `${novelId}.${novelName}: ${lastRead}: ${lastReadChapter}`,
                     })),
+                    loop: false,
                 },
             ])
             .then(async ({ id }) => {
@@ -269,7 +271,8 @@ async function promptNovelDetails(novelId: number) {
             favoriteData?.lastReadChapter,
             favoriteData?.lastReadChapter == recentChapter ? '否' : '是',
         ]);
-        console.log('收藏信息');
+        
+        console.log(chalk.yellow.bold('收藏信息'));
         console.log(favInfoTable.toString());
     }
 
