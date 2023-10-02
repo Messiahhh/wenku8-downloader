@@ -58,4 +58,5 @@ interface FavoriteNovel {
     novelName: string;
     lastRead: string;
     lastReadChapter: string;
+    lastUpdatedChapter?: string | undefined;
 }

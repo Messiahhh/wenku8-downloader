@@ -92,7 +92,7 @@ function questionTwo(question: keyof typeof Questions) {
         }
 
         case Questions[Questions.查看收藏]: {
-            promptForFavorites();
+            promptForFavorites(false);
             break;
         }
 
@@ -195,23 +195,39 @@ function questionTwo(question: keyof typeof Questions) {
                 }
             });
     }
-    function promptForFavorites() {
-        return inquirer
-            .prompt([
-                {
-                    type: 'list',
-                    name: 'id',
-                    message: '收藏',
-                    choices: favorites.map(({ novelId, novelName, lastRead, lastReadChapter }) => ({
+    async function promptForFavorites(updateChecked: boolean) {
+        const { id } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'id',
+                message: '收藏',
+                choices: favorites
+                    .map(({ novelId, novelName, lastReadChapter, lastUpdatedChapter }) => ({
                         value: novelId,
-                        name: `${novelId}.${novelName}: ${lastRead}: ${lastReadChapter}`,
-                    })),
-                    loop: false,
-                },
-            ])
-            .then(async ({ id }) => {
-                promptNovelDetails(id);
-            });
+
+                        name: updateChecked
+                            ? `${novelId}.${novelName}: ${lastReadChapter} ${
+                                  lastReadChapter != lastUpdatedChapter ? chalk.yellow.bold('=> '.concat(lastUpdatedChapter!)) : chalk.green.bold('✔')
+                              }`
+                            : `${novelId}.${novelName}: ${lastReadChapter}`,
+                    }))
+                    .concat({
+                        name: '检查更新',
+                        value: -1,
+                    }),
+                loop: false,
+            },
+        ]);
+        if (id >= 0) promptNovelDetails(id);
+        else {
+            const spinner = ora('请求中，请稍等...').start();
+            for (let i = 0; i < favorites.length; i++) {
+                const { recentChapter } = await getNovelDetails(favorites[i].novelId);
+                favorites[i].lastUpdatedChapter = recentChapter;
+            }
+            spinner.stop();
+            promptForFavorites(true);
+        }
     }
 }
 
@@ -271,7 +287,7 @@ async function promptNovelDetails(novelId: number) {
             favoriteData?.lastReadChapter,
             favoriteData?.lastReadChapter == recentChapter ? '否' : '是',
         ]);
-        
+
         console.log(chalk.yellow.bold('收藏信息'));
         console.log(favInfoTable.toString());
     }
@@ -297,6 +313,16 @@ async function promptNovelDetails(novelId: number) {
         .then(({ choice }) => {
             switch (choice) {
                 case 0:
+                    for (let i = 0; i < favorites.length; i++) {
+                        if (favorites[i].novelId == novelId) {
+                            favorites[i].novelId = novelId;
+                            favorites[i].novelName = novelName;
+                            favorites[i].lastReadChapter = recentChapter;
+                            favorites[i].lastRead = new Date().toLocaleString();
+                            break;
+                        }
+                    }
+                    fs.writeFileSync(favoritesConfigFilePath, JSON.stringify(favorites));
                     downloadNovel(novelId, options);
                     break;
                 case 1:
