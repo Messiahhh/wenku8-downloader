@@ -211,7 +211,7 @@ async function getChapterList(catalogueUrl: NonNullable<INovel['catalogueUrl']>)
     >;
     amount: number;
 }> {
-    const $ = await fetch(`https://www.wenku8.net/${catalogueUrl}`);
+    const $ = await fetch(`https://www.wenku8.net${catalogueUrl}`);
     const rows = $('tbody').children();
 
     // 获取小说卷数
@@ -270,7 +270,7 @@ async function getChapterList(catalogueUrl: NonNullable<INovel['catalogueUrl']>)
  * @returns
  */
 async function downloadChapter(chapterUrl: string, options: CommandOptions) {
-    const $ = await fetch(chapterUrl);
+    const $ = await fetch(`https://www.wenku8.net${chapterUrl}`);
     if ($('#contentmain span').first().text().trim() == 'null') {
         // for: 因版权问题，文库不再提供该小说的阅读！
         let content = '';
