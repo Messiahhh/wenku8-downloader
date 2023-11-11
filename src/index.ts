@@ -19,6 +19,8 @@ enum Questions {
 
 var favorites = new Array<FavoriteNovel>();
 const favoritesConfigFilePath = path.join(process.cwd(), 'novels', 'favorites.json');
+if(!fs.existsSync("novels"))
+    fs.mkdirSync("novels");
 
 const program = new Command();
 program
