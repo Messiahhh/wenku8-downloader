@@ -448,14 +448,11 @@ export async function getHotList(): Promise<
             novelName: string;
             novelId: number;
         }[];
-    }> = $('body')
-        .children()
-        .eq(4)
-        .find('#right')
+    }> = $('div#right')
         .children()
         .map((index, item) => {
             const novels = $(item)
-                .find('ul a')
+                .find('.blockcontent ul li a')
                 .map((_i, item) => {
                     const novelName = $(item).attr('title');
                     const href = $(item).attr('href');
@@ -474,10 +471,7 @@ export async function getHotList(): Promise<
         })
         .get();
 
-    const centersResult = $('body')
-        .children()
-        .eq(4)
-        .find('#centers')
+    const centersResult = $('div#centers')
         .children()
         .slice(1, 4)
         .map((index, item) => {
