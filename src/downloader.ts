@@ -211,7 +211,7 @@ async function getChapterList(catalogueUrl: NonNullable<INovel['catalogueUrl']>)
     >;
     amount: number;
 }> {
-    const $ = await fetch(catalogueUrl);
+    const $ = await fetch(`https://www.wenku8.net/${catalogueUrl}`);
     const rows = $('tbody').children();
 
     // 获取小说卷数
