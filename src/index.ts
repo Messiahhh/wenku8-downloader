@@ -136,7 +136,7 @@ function questionTwo(question: keyof typeof Questions) {
                 }
             });
     }
-    function promptForSearch() {
+    async function promptForSearch() {
         inquirer
             .prompt([
                 {

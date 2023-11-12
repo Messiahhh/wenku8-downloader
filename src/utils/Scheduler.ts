@@ -14,7 +14,7 @@ export class Scheduler {
         this.tasks = [];
     }
 
-    add(task: typeof this.queue[number]) {
+    add(task: (typeof this.queue)[number]) {
         if (this.tasks.length < this.limit) {
             this.amount++;
             const promise = task();
@@ -41,16 +41,5 @@ export class Scheduler {
                 }
             }, 1000);
         });
-    }
-}
-
-export async function retryFn<T extends () => Promise<any>>(asyncFn: T, times = 10): Promise<ReturnType<T>> {
-    try {
-        return asyncFn();
-    } catch (error) {
-        if (times > 0) {
-            return retryFn(asyncFn, times - 1);
-        }
-        throw error;
     }
 }
