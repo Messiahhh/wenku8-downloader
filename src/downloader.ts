@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import ora from 'ora';
-import chalk from 'chalk';
+import chalk, { modifierNames } from 'chalk';
 import { fetch } from './utils/fetch.js';
 import retry from 'async-retry';
 import Epub from 'epub-gen-memory';
@@ -70,13 +70,14 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                 const chapters = volumeMap.get(volume.name);
                 if (chapters) {
                     for (const { chapterIndex, chapterTitle, chapterUrl } of chapters) {
+                        const modifiedChapterTitle = chapterTitle.replace("\\", "＼").replace("/","／");
                         let readFromDisk = false;
                         try {
                             if (!options.onlyImages) {
                                 spinner.start(
                                     `正在下载：` +
                                         chalk.bold.black.bgWhite(` ${count + 1}/${amount} `) +
-                                        chalk.blue.bold(`${volume.name}、${chapterTitle}`)
+                                        chalk.blue.bold(`${volume.name}、${modifiedChapterTitle}`)
                                 );
                             }
                             const { content, images } = await retry(
@@ -86,7 +87,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                         options.outDir,
                                         novel.novelName,
                                         volumeNameWithIndex,
-                                        `${chapterIndex}-${chapterTitle}.${options.ext}`
+                                        `${chapterIndex}-${modifiedChapterTitle}.${options.ext}`
                                     );
                                     if (fs.existsSync(localDir)) {
                                         readFromDisk = true;
@@ -109,7 +110,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                         paths.push(imagePath);
                                         if (!options.epub) {
                                             try {
-                                                spinner.start(`${volume.name}-${chapterTitle}-${imagePath}下载中`);
+                                                spinner.start(`${volume.name}-${modifiedChapterTitle}-${imagePath}下载中`);
                                                 let imageReadFromDisk = false;
                                                 const res = await retry(
                                                     async () => {
@@ -134,7 +135,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                                     }
                                                 );
                                                 spinner.succeed(
-                                                    `${volume.name}-${chapterTitle}-${imagePath}下载完成${
+                                                    `${volume.name}-${modifiedChapterTitle}-${imagePath}下载完成${
                                                         imageReadFromDisk ? '由磁盘读取' : ''
                                                     }`
                                                 );
@@ -152,11 +153,11 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                             } catch {
                                                 errorTimes++;
                                                 console.log(
-                                                    chalk.red(`${volume.name}-${chapterTitle}-${imagePath}下载失败`)
+                                                    chalk.red(`${volume.name}-${modifiedChapterTitle}-${imagePath}下载失败`)
                                                 );
                                                 return appendFile(
                                                     path.join(process.cwd(), 'wenku8-error.log'),
-                                                    `${volume.name}-${chapterTitle}-${imagePath}下载失败, 链接地址：${imageUrl}\n`
+                                                    `${volume.name}-${modifiedChapterTitle}-${imagePath}下载失败, 链接地址：${imageUrl}\n`
                                                 );
                                             }
                                         }
@@ -165,7 +166,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                             }
                             if (options.epub) {
                                 epubOptions.content[volume.index].content[chapterIndex] =
-                                    `<h1>${chapterTitle}</h1>` + content;
+                                    `<h1>${modifiedChapterTitle}</h1>` + content;
                             } else if (!options.onlyImages) {
                                 await writeFile(
                                     path.join(
@@ -173,9 +174,9 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                         options.outDir,
                                         novel.novelName,
                                         volumeNameWithIndex,
-                                        `${chapterIndex}-${chapterTitle}.${options.ext}`
+                                        `${chapterIndex}-${modifiedChapterTitle}.${options.ext}`
                                     ),
-                                    `# ${chapterTitle}\n` +
+                                    `# ${modifiedChapterTitle}\n` +
                                         content +
                                         paths.map(path => `![](./插图/${path})`).join('\n')
                                 );
@@ -185,7 +186,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                     `下载成功：` +
                                         chalk.bold.black.bgGreen(` ${count + 1}/${amount} `) +
                                         chalk.blue.bold(
-                                            `${volume.name}、${chapterTitle}${readFromDisk ? '（由磁盘读取）' : ''}`
+                                            `${volume.name}、${modifiedChapterTitle}${readFromDisk ? '（由磁盘读取）' : ''}`
                                         )
                                 );
                             }
@@ -193,10 +194,10 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                         } catch (error) {
                             errorTimes++;
                             count++;
-                            console.log(chalk.red(`${chapterTitle}下载失败`));
+                            console.log(chalk.red(`${modifiedChapterTitle}下载失败`));
                             return appendFile(
                                 path.join(process.cwd(), 'wenku8-error.log'),
-                                `${chapterTitle}下载失败, 链接地址：${chapterUrl}`
+                                `${modifiedChapterTitle}下载失败, 链接地址：${chapterUrl}`
                             );
                         }
                     }
