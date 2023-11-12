@@ -88,41 +88,44 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                 }
                             );
                             const paths: string[] = [];
-                            if (images.length) {
-                                for (const imageUrl of images) {
-                                    const imagePath = imageUrl.split('/').pop();
-                                    paths.push(imagePath);
-                                    if (!options.epub) {
-                                        try {
-                                            spinner.start(`${volume.name}-${chapterTitle}-${imagePath}下载中`);
-                                            const res = await retry(
-                                                async () => await axios.get(imageUrl, { responseType: 'arraybuffer' }),
-                                                {
-                                                    minTimeout: 5000,
-                                                    retries: 10,
-                                                }
-                                            );
-                                            spinner.succeed(`${volume.name}-${chapterTitle}-${imagePath}下载完成`);
+                            if (!options.onlyText) {
+                                if (images.length) {
+                                    for (const imageUrl of images) {
+                                        const imagePath = imageUrl.split('/').pop();
+                                        paths.push(imagePath);
+                                        if (!options.epub) {
+                                            try {
+                                                spinner.start(`${volume.name}-${chapterTitle}-${imagePath}下载中`);
+                                                const res = await retry(
+                                                    async () =>
+                                                        await axios.get(imageUrl, { responseType: 'arraybuffer' }),
+                                                    {
+                                                        minTimeout: 5000,
+                                                        retries: 10,
+                                                    }
+                                                );
+                                                spinner.succeed(`${volume.name}-${chapterTitle}-${imagePath}下载完成`);
 
-                                            await writeFile(
-                                                path.join(
-                                                    process.cwd(),
-                                                    options.outDir,
-                                                    novel.novelName,
-                                                    volumeNameWithIndex,
-                                                    `./插图/${imagePath}`
-                                                ),
-                                                res.data
-                                            );
-                                        } catch {
-                                            errorTimes++;
-                                            console.log(
-                                                chalk.red(`${volume.name}-${chapterTitle}-${imagePath}下载失败`)
-                                            );
-                                            return appendFile(
-                                                path.join(process.cwd(), 'wenku8-error.log'),
-                                                `${volume.name}-${chapterTitle}-${imagePath}下载失败, 链接地址：${imageUrl}\n`
-                                            );
+                                                await writeFile(
+                                                    path.join(
+                                                        process.cwd(),
+                                                        options.outDir,
+                                                        novel.novelName,
+                                                        volumeNameWithIndex,
+                                                        `./插图/${imagePath}`
+                                                    ),
+                                                    res.data
+                                                );
+                                            } catch {
+                                                errorTimes++;
+                                                console.log(
+                                                    chalk.red(`${volume.name}-${chapterTitle}-${imagePath}下载失败`)
+                                                );
+                                                return appendFile(
+                                                    path.join(process.cwd(), 'wenku8-error.log'),
+                                                    `${volume.name}-${chapterTitle}-${imagePath}下载失败, 链接地址：${imageUrl}\n`
+                                                );
+                                            }
                                         }
                                     }
                                 }

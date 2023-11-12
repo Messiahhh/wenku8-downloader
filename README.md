@@ -83,6 +83,11 @@ wenku8 --no-epub
 wenku8 --no-epub --onlyImages
 ```
 
+### 方法四、仅下载小说文字
+可与 --no-epub 选项连用
+```shell
+wenku8 --only-text
+```
 
 
 

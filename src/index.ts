@@ -32,7 +32,8 @@ program
     .option('--onlyImages', '只下载小说的插图', false)
     .option('-o, --out-dir <value>', '指定小说放置目录，默认在当前目录下生成', './novels')
     .option('--verbose', '显示更多日志', false)
-    .option('--strict', '严格模式下图片的下载失败将会阻止epub文件的生成', false);
+    .option('--strict', '严格模式下图片的下载失败将会阻止epub文件的生成', false)
+    .option("--only-text", '仅下载文本，而不下载图片', false)
 
 program.parse(process.argv);
 const options: CommandOptions = program.opts();
