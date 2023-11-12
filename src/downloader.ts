@@ -70,6 +70,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                 const chapters = volumeMap.get(volume.name);
                 if (chapters) {
                     for (const { chapterIndex, chapterTitle, chapterUrl } of chapters) {
+                        let readFromDisk = false;
                         try {
                             if (!options.onlyImages) {
                                 spinner.start(
@@ -80,6 +81,19 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                             }
                             const { content, images } = await retry(
                                 async () => {
+                                    const localDir = path.join(
+                                        process.cwd(),
+                                        options.outDir,
+                                        novel.novelName,
+                                        volumeNameWithIndex,
+                                        `${chapterIndex}-${chapterTitle}.${options.ext}`
+                                    );
+                                    if (fs.existsSync(localDir)) {
+                                        readFromDisk = true;
+                                        const localBuffer = fs.readFileSync(localDir);
+                                        const decoder = new TextDecoder('utf-8');
+                                        return { content: decoder.decode(localBuffer), images: [] };
+                                    }
                                     return await downloadChapter(chapterUrl, options);
                                 },
                                 {
@@ -96,15 +110,34 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                         if (!options.epub) {
                                             try {
                                                 spinner.start(`${volume.name}-${chapterTitle}-${imagePath}下载中`);
+                                                let imageReadFromDisk = false;
                                                 const res = await retry(
-                                                    async () =>
-                                                        await axios.get(imageUrl, { responseType: 'arraybuffer' }),
+                                                    async () => {
+                                                        const localImagePath = path.join(
+                                                            process.cwd(),
+                                                            options.outDir,
+                                                            novel.novelName,
+                                                            volumeNameWithIndex,
+                                                            `./插图/${imagePath}`
+                                                        );
+                                                        if (fs.existsSync(localImagePath)) {
+                                                            imageReadFromDisk = true;
+                                                            return {data: fs.readFileSync(localImagePath)};
+                                                        }
+                                                        return await axios.get(imageUrl, {
+                                                            responseType: 'arraybuffer',
+                                                        });
+                                                    },
                                                     {
                                                         minTimeout: 5000,
                                                         retries: 10,
                                                     }
                                                 );
-                                                spinner.succeed(`${volume.name}-${chapterTitle}-${imagePath}下载完成`);
+                                                spinner.succeed(
+                                                    `${volume.name}-${chapterTitle}-${imagePath}下载完成${
+                                                        imageReadFromDisk ? '由磁盘读取' : ''
+                                                    }`
+                                                );
 
                                                 await writeFile(
                                                     path.join(
@@ -151,7 +184,9 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                 spinner.succeed(
                                     `下载成功：` +
                                         chalk.bold.black.bgGreen(` ${count + 1}/${amount} `) +
-                                        chalk.blue.bold(`${volume.name}、${chapterTitle}`)
+                                        chalk.blue.bold(
+                                            `${volume.name}、${chapterTitle}${readFromDisk ? '（由磁盘读取）' : ''}`
+                                        )
                                 );
                             }
                             count++;
