@@ -99,7 +99,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                 },
                                 {
                                     retries: 10,
-                                    minTimeout: 5000,
+                                    minTimeout: 3000,
                                 }
                             );
                             const paths: string[] = [];
@@ -130,7 +130,7 @@ export async function downloadNovel(novelId: number, options: CommandOptions) {
                                                         });
                                                     },
                                                     {
-                                                        minTimeout: 5000,
+                                                        minTimeout: 3000,
                                                         retries: 10,
                                                     }
                                                 );
