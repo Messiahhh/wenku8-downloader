@@ -6,6 +6,7 @@ import ora from 'ora';
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getCookie } from './utils/fetch.js';
+import retry from 'async-retry';
 import fs from 'fs';
 import path from 'path';
 
@@ -19,8 +20,7 @@ enum Questions {
 
 var favorites = new Array<FavoriteNovel>();
 const favoritesConfigFilePath = path.join(process.cwd(), 'novels', 'favorites.json');
-if(!fs.existsSync("novels"))
-    fs.mkdirSync("novels");
+if (!fs.existsSync('novels')) fs.mkdirSync('novels');
 
 const program = new Command();
 program
@@ -33,7 +33,7 @@ program
     .option('-o, --out-dir <value>', '指定小说放置目录，默认在当前目录下生成', './novels')
     .option('--verbose', '显示更多日志', false)
     .option('--strict', '严格模式下图片的下载失败将会阻止epub文件的生成', false)
-    .option("--only-text", '仅下载文本，而不下载图片', false)
+    .option('--only-text', '仅下载文本，而不下载图片', false);
 
 program.parse(process.argv);
 const options: CommandOptions = program.opts();
@@ -210,7 +210,9 @@ function questionTwo(question: keyof typeof Questions) {
 
                         name: updateChecked
                             ? `${novelId}.${novelName}: ${lastReadChapter} ${
-                                  lastReadChapter != lastUpdatedChapter ? chalk.yellow.bold('=> '.concat(lastUpdatedChapter!)) : chalk.green.bold('✔')
+                                  lastReadChapter != lastUpdatedChapter
+                                      ? chalk.yellow.bold('=> '.concat(lastUpdatedChapter!))
+                                      : chalk.green.bold('✔')
                               }`
                             : `${novelId}.${novelName}: ${lastReadChapter}`,
                     }))
@@ -225,8 +227,13 @@ function questionTwo(question: keyof typeof Questions) {
         else {
             const spinner = ora('请求中，请稍等...').start();
             for (let i = 0; i < favorites.length; i++) {
-                const { recentChapter } = await getNovelDetails(favorites[i].novelId);
-                favorites[i].lastUpdatedChapter = recentChapter;
+                await retry(async () => {
+                    const { recentChapter } = await getNovelDetails(favorites[i].novelId);
+                    favorites[i].lastUpdatedChapter = recentChapter;
+                }, {
+                    minTimeout:3000,
+                    maxRetryTime: 10,
+                });
             }
             spinner.stop();
             promptForFavorites(true);
