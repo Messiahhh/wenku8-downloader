@@ -333,7 +333,7 @@ async function downloadChapter(chapterUrl: string, options: CommandOptions) {
                         responseType: 'arraybuffer',
                     }
                 );
-                content = iconv.decode(res.data, 'utf-8');
+                content = iconv.decode(res.data, 'utf-16le');
             }
         }
 
