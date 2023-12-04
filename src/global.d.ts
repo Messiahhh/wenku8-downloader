@@ -51,6 +51,7 @@ interface CommandOptions {
     outDir: string;
     verbose: boolean;
     strict: boolean;
+    onlyText: boolean;
 }
 
 interface FavoriteNovel {

@@ -20,10 +20,14 @@
       "isolatedModules": true,
       "jsx": "react-jsx",
       "noFallthroughCasesInSwitch": true,
-      "outDir": "dist"
+      "outDir": "dist",
+      "sourceMap": true
     },
     "include": [
-      "src"
-    ]
+      "src",
+    ],
+    "ts-node": {
+      "esm": true
+    }
   }
   
