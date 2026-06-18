@@ -13,24 +13,51 @@
 - 原始 HTML、结构化书稿和资源 manifest 均保留在工作区
 - 交互模式支持搜索、选择下载、返回上级菜单和更清晰的任务进度反馈
 
-## 环境
+## 用户使用
 
-推荐使用 Node.js 24 LTS 和 pnpm 9。
+### 环境要求
+
+需要 Node.js 22.13 或更高版本。推荐直接使用 Node.js 24 LTS。
+
+### 安装
 
 ```bash
-pnpm install
-pnpm build
-pnpm link --global
+npm install -g wenku8
 ```
 
-## 使用
+也可以不全局安装，直接用 npx 运行：
+
+```bash
+npx wenku8 --help
+```
+
+安装后确认 CLI 可用：
+
+```bash
+wenku8 --version
+wenku8 doctor
+```
+
+### 快速开始
+
+```bash
+# 首次使用先保存登录态
+wenku8 login
+
+# 进入交互模式
+wenku8
+
+# 或直接下载
+wenku8 download 1973
+```
+
+`wenku8 login` 会要求粘贴 `www.wenku8.net` 域名下的完整 Cookie。保存后，搜索、查看详情、下载等命令会自动使用这个登录态。
+
+### 常用命令
 
 ```bash
 # 交互模式
 wenku8
-
-# 首次使用先保存登录态
-wenku8 login
 
 # 搜索
 wenku8 search "小说名"
@@ -74,7 +101,7 @@ wenku8 config
 wenku8 logout
 ```
 
-常用下载选项：
+### 常用下载选项
 
 ```text
 -o, --output <directory>      EPUB 输出目录，默认在用户配置目录 downloads/
@@ -101,6 +128,8 @@ all    热门轻小说     sort=allvisit
 good   最受关注       sort=goodnum
 new    新书一览       sort=postdate
 ```
+
+## 登录态
 
 搜索、榜单、详情和下载等需要访问 wenku8 的命令都必须提供 Cookie。Cookie 读取优先级为：`--cookie` 参数 > `WENKU8_COOKIE` 环境变量 > `--cookie-file` 指定文件 > 当前目录 `.wenku8-cookie` > 用户配置目录 Cookie。没有任何 Cookie 时，CLI 会提前提示先执行 `wenku8 login`，不会继续发起请求。
 
@@ -163,9 +192,20 @@ epub/package/          EPUB 构建前的可检查目录
 
 `--allow-missing-images` 仅用于用户明确接受不完整产物的情况。
 
-## 开发
+## 本地开发
+
+推荐使用 Node.js 24 LTS 和 pnpm 9。
 
 ```bash
+pnpm install
+pnpm build
+pnpm link --global
+```
+
+常用开发命令：
+
+```bash
+pnpm dev -- --help
 pnpm typecheck
 pnpm lint
 pnpm test
