@@ -61,4 +61,11 @@ export interface BookSummary {
   id: number;
   title: string;
   author?: string;
+  category?: string;
+  updatedAt?: string;
+  length?: string;
+  status?: string;
+  tags?: string[];
+  description?: string;
+  notice?: string;
 }

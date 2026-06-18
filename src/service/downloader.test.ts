@@ -9,7 +9,7 @@ import { parseBookDetails, parseCatalogue, type BookDetails } from '../site/pars
 import type { Chapter, Volume } from '../domain/book.js';
 import { CopyrightUnavailableError } from '../domain/errors.js';
 import { manifestSchema } from '../storage/schema.js';
-import { Downloader } from './downloader.js';
+import { Downloader, type ProgressEvent } from './downloader.js';
 
 describe('Downloader', () => {
   const servers: ReturnType<typeof createServer>[] = [];
@@ -151,5 +151,72 @@ describe('Downloader', () => {
       }),
     ).rejects.toThrow(/因版权问题/);
     expect(chapterRequests).toBeLessThanOrEqual(2);
+  });
+
+  it('reports chapter failures and retry rounds without counting failed attempts as complete', async () => {
+    const attempts = new Map<string, number>();
+
+    class RetryingClient extends Wenku8Client {
+      constructor() {
+        super({ concurrency: 1, retries: 0, timeoutMs: 2_000, requestsPerSecond: 20 });
+      }
+
+      override getBookDetails(bookId: number): Promise<{ book: BookDetails; raw: string }> {
+        const raw = `<div id="content"><span><b>重试测试</b></span><div>小说作者：测试作者</div><a href="/novel/42/index.htm">目录</a><div id="contentmain">测试简介</div></div>`;
+        return Promise.resolve({
+          raw,
+          book: parseBookDetails(raw, bookId, `https://www.wenku8.net/book/${bookId}.htm`),
+        });
+      }
+
+      override getCatalogue(): Promise<{ volumes: Volume[]; raw: string }> {
+        const raw = `<table>
+          <tr><td colspan="4">第一卷</td></tr>
+          <tr>
+            <td><a href="1.htm">第一章</a></td>
+            <td><a href="2.htm">第二章</a></td>
+          </tr>
+        </table>`;
+        return Promise.resolve({
+          raw,
+          volumes: parseCatalogue(raw, 'https://www.wenku8.net/novel/42/index.htm'),
+        });
+      }
+
+      override getChapter(chapter: Chapter): Promise<{ chapter: Chapter; raw: string }> {
+        const attempt = (attempts.get(chapter.id) ?? 0) + 1;
+        attempts.set(chapter.id, attempt);
+        if (chapter.title === '第一章' && attempt === 1) {
+          return Promise.reject(new Error('HTTP 429 for test'));
+        }
+        return Promise.resolve({
+          raw: '<div id="content">正文</div>',
+          chapter: {
+            ...chapter,
+            blocks: [{ type: 'paragraph', text: `${chapter.title}正文` }],
+          },
+        });
+      }
+    }
+
+    const events: ProgressEvent[] = [];
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wenku8-retry-'));
+    await new Downloader(new RetryingClient()).download(42, {
+      workDirectory: root,
+      outputDirectory: root,
+      chapterConcurrency: 1,
+      chapterRetryRounds: 1,
+      chapterRetryDelayMs: 1,
+      onProgress: (event) => events.push(event),
+    });
+
+    const failed = events.find((event) => event.phase === 'chapters' && event.kind === 'failed');
+    const retry = events.find((event) => event.phase === 'chapters' && event.kind === 'retry');
+    const completed = events.filter(
+      (event) => event.phase === 'chapters' && event.kind === 'complete',
+    );
+    expect(failed).toMatchObject({ completed: 0, total: 2 });
+    expect(retry).toMatchObject({ completed: 1, total: 2 });
+    expect(completed.map((event) => event.completed)).toEqual([1, 2]);
   });
 });

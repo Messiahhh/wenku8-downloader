@@ -1,6 +1,6 @@
 {
   "name": "wenku8",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "Resumable Wenku8 novel downloader and EPUB 3 builder",
   "type": "module",
   "bin": {
@@ -44,16 +44,19 @@
   "dependencies": {
     "@inquirer/prompts": "^8.5.2",
     "archiver": "^7.0.1",
+    "boxen": "^8.0.1",
     "cheerio": "^1.2.0",
     "commander": "^14.0.3",
     "domhandler": "^5.0.3",
     "fetch-cookie": "^3.2.0",
     "iconv-lite": "^0.7.0",
+    "listr2": "^10.2.1",
     "p-queue": "^9.0.1",
     "p-retry": "^7.1.1",
     "sharp": "^0.34.5",
     "tough-cookie": "^6.0.1",
     "xmlbuilder2": "^4.0.3",
+    "yoctocolors": "^2.1.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -7,11 +7,37 @@ import {
   parseChapter,
   parsePackedChapter,
   parseSearchResults,
+  parseSugoiResults,
 } from './parser.js';
 import { HttpClient, type HttpClientOptions } from '../http/client.js';
 import { CopyrightUnavailableError } from '../domain/errors.js';
 
 const BASE_URL = 'https://www.wenku8.net';
+
+export type ToplistSort = 'dayvisit' | 'monthvisit' | 'allvisit' | 'goodnum' | 'postdate';
+export type SugoiYear =
+  | 2026
+  | 2025
+  | 2024
+  | 2023
+  | 2022
+  | 2021
+  | 2020
+  | 2019
+  | 2018
+  | 2017
+  | 2016
+  | 2015
+  | 2014
+  | 2013
+  | 2012
+  | 2011
+  | 2010
+  | 2009
+  | 2008
+  | 2007
+  | 2006
+  | 2005;
 
 export class Wenku8Client {
   readonly http: HttpClient;
@@ -60,6 +86,16 @@ export class Wenku8Client {
       .join('');
     const url = `${BASE_URL}/modules/article/search.php?searchtype=${type}&searchkey=${encoded}`;
     return parseSearchResults(await this.http.text(url));
+  }
+
+  async toplist(sort: ToplistSort = 'dayvisit'): Promise<BookSummary[]> {
+    const url = `${BASE_URL}/modules/article/toplist.php?sort=${sort}`;
+    return parseSearchResults(await this.http.text(url));
+  }
+
+  async sugoi(year: SugoiYear = 2026): Promise<BookSummary[]> {
+    const url = `${BASE_URL}/zt/sugoi/${year}.php`;
+    return parseSugoiResults(await this.http.text(url));
   }
 
   private async getPackedChapter(chapter: Chapter, signal?: AbortSignal): Promise<Chapter> {
