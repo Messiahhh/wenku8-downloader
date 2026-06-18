@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: npm pack --dry-run
+
+  epubcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      - name: Install EPUBCheck
+        run: |
+          curl -fsSL -o epubcheck.zip https://github.com/w3c/epubcheck/releases/download/v5.3.0/epubcheck-5.3.0.zip
+          unzip -q epubcheck.zip
+          mkdir -p "$PWD/bin"
+          printf '#!/bin/sh\nexec java -jar "%s/epubcheck-5.3.0/epubcheck.jar" "$@"\n' "$PWD" > "$PWD/bin/epubcheck"
+          chmod +x "$PWD/bin/epubcheck"
+          echo "$PWD/bin" >> "$GITHUB_PATH"
+      - run: pnpm test
+        env:
+          CI_EPUBCHECK: '1'

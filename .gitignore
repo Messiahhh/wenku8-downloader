@@ -1,6 +1,11 @@
-node_modules
-novels/*
-novels
-dist
-wenku8-error.log
+node_modules/
+dist/
+downloads/
+coverage/
+*.epub
+*.log
+.env
+.env.*
+.wenku8-cookie
+.wenku8-cookie.*
 .DS_Store

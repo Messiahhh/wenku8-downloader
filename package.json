@@ -1,67 +1,71 @@
 {
   "name": "wenku8",
-  "version": "3.5.0",
-  "description": "轻小说文库下载器",
-  "main": "dist/index.js",
+  "version": "5.0.0",
+  "description": "Resumable Wenku8 novel downloader and EPUB 3 builder",
   "type": "module",
   "bin": {
-    "wenku8": "dist/index.js"
+    "wenku8": "dist/cli.js"
   },
-  "scripts": {
-    "start": "tsc && node dist/index.js",
-    "build": "tsc",
-    "clear": "rm -rf ./novels"
-  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
-  "author": "Akara",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "clean": "node --eval \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "pnpm clean && tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "prepack": "pnpm check"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Messiahhh/wenku8-downloader"
+    "url": "git+https://github.com/Messiahhh/wenku8-downloader.git"
   },
   "keywords": [
-    "cli",
-    "command-line",
-    "terminal",
-    "console",
-    "crawler",
-    "wenku",
     "wenku8",
-    "轻小说",
-    "轻小说文库"
+    "epub",
+    "cli",
+    "downloader"
   ],
   "license": "MIT",
   "dependencies": {
-    "@types/async-retry": "^1.4.8",
-    "@types/inquirer": "^9.0.3",
-    "@types/through": "^0.0.31",
-    "async-retry": "^1.3.3",
-    "axios": "^0.27.2",
-    "chalk": "^5.0.1",
-    "cheerio": "^1.0.0-rc.2",
-    "cli-table3": "^0.6.2",
-    "commander": "^9.4.0",
-    "epub-gen-honor": "^1.0.5",
-    "epub-gen-loose": "^0.1.0",
-    "epub-gen-memory": "^1.0.9",
-    "follow-redirects": "^1.15.3",
-    "iconv-lite": "^0.4.19",
-    "inquirer": "^9.2.11",
-    "ora": "^6.1.2",
-    "set-cookie-parser": "^2.5.1",
-    "typescript": "^5.2.2"
+    "@inquirer/prompts": "^8.5.2",
+    "archiver": "^7.0.1",
+    "cheerio": "^1.2.0",
+    "commander": "^14.0.3",
+    "domhandler": "^5.0.3",
+    "fetch-cookie": "^3.2.0",
+    "iconv-lite": "^0.7.0",
+    "p-queue": "^9.0.1",
+    "p-retry": "^7.1.1",
+    "sharp": "^0.34.5",
+    "tough-cookie": "^6.0.1",
+    "xmlbuilder2": "^4.0.3",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/cheerio": "^0.22.31",
-    "@types/iconv": "^3.0.1",
-    "@types/inquirer": "^9.0.1",
-    "@types/set-cookie-parser": "^2.4.2",
-    "@typescript-eslint/eslint-plugin": "^5.36.1",
-    "@typescript-eslint/parser": "^5.36.1",
-    "eslint": "^8.23.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "^2.7.1"
+    "@eslint/js": "^9.39.4",
+    "@types/archiver": "^7.0.0",
+    "@types/node": "^24.10.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.4",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.61.1",
+    "vitest": "^4.1.9"
   }
 }
