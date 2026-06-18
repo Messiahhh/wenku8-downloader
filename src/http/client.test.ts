@@ -43,11 +43,13 @@ describe('HttpClient', () => {
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Test server did not bind');
+    const retryEvents: Array<{ status?: number; retriesLeft: number; attemptNumber: number }> = [];
     const client = new HttpClient({
       retries: 1,
       timeoutMs: 1_000,
       minDelayMs: 1,
       rateLimitCooldownMs: 1,
+      onRetry: (event) => retryEvents.push(event),
     });
 
     await expect(client.text(`http://127.0.0.1:${address.port}/`, 'utf-8')).resolves.toBe('ok');
@@ -59,5 +61,6 @@ describe('HttpClient', () => {
       rateLimitCooldowns: 1,
       statusCodes: { '200': 1, '429': 1 },
     });
+    expect(retryEvents).toMatchObject([{ status: 429, retriesLeft: 1, attemptNumber: 1 }]);
   });
 });

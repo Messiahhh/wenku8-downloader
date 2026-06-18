@@ -11,6 +11,7 @@
 - 默认拒绝生成缺章或缺图的电子书
 - 输出 EPUB 3，并支持调用官方 EPUBCheck 校验
 - 原始 HTML、结构化书稿和资源 manifest 均保留在工作区
+- 交互模式支持搜索、选择下载、返回上级菜单和更清晰的任务进度反馈
 
 ## 环境
 
@@ -28,12 +29,26 @@ pnpm link --global
 # 交互模式
 wenku8
 
+# 首次使用先保存登录态
+wenku8 login
+
 # 搜索
 wenku8 search "小说名"
 wenku8 search "作者名" --author
+wenku8 search "小说名" --download
+
+# 榜单
+wenku8 toplist day
+wenku8 toplist month
+wenku8 toplist all --download
+
+# 轻小说大赏
+wenku8 sugoi 2026
+wenku8 sugoi 2005 --download
 
 # 查看详情
 wenku8 info 1973
+wenku8 info 1973 --json
 
 # 下载并生成 EPUB
 wenku8 download 1973
@@ -44,19 +59,26 @@ wenku8 resume 1973
 
 # 查看工作区状态
 wenku8 status 1973
+wenku8 status 1973 --json
 
 # 使用官方 EPUBCheck 校验
-wenku8 validate downloads/小说名.epub
+wenku8 validate ~/Library/Application\ Support/wenku8/downloads/小说名.epub
 
 # 检查运行环境
 wenku8 doctor
+
+# 保存或清理登录态
+wenku8 login
+wenku8 login --cookie-file .wenku8-cookie
+wenku8 config
+wenku8 logout
 ```
 
 常用下载选项：
 
 ```text
--o, --output <directory>      EPUB 输出目录
--w, --work-dir <directory>    可恢复工作区目录
+-o, --output <directory>      EPUB 输出目录，默认在用户配置目录 downloads/
+-w, --work-dir <directory>    可恢复工作区目录，默认在用户配置目录 workspace/
 -c, --concurrency <number>    网络并发数
 -r, --rate-limit <number>     每秒最多请求数，默认 1
 --chapter-retry-rounds <n>    章节失败后的整轮自动重试次数，默认 2
@@ -65,11 +87,38 @@ wenku8 doctor
 --cookie-file <file>          本地 Cookie 文件，默认读取 .wenku8-cookie
 --allow-missing-images        明确允许生成缺图版本
 --http-stats                  打印 Node/curl、429 和自动重试统计
+--verbose-progress            显示每个章节的详细进度日志
 ```
 
-Cookie 读取优先级为：`--cookie` 参数 > `WENKU8_COOKIE` 环境变量 > 本地 Cookie 文件。默认本地文件是项目根目录的 `.wenku8-cookie`，已被 `.gitignore` 忽略。
+不带子命令运行 `wenku8` 会进入交互模式，默认展示“搜索下载”、五个榜单入口、“轻小说大赏”、“检查环境”和“退出”。搜索下载支持按小说名模糊搜索、作者名搜索，或直接输入小说 ID；小说 ID 输入也兼容从浏览器复制的详情页 URL。轻小说大赏支持选择 2026 到 2005 年。交互子菜单支持选择“返回上级”，输入类页面可留空或输入 `q` 返回；下载或环境检查执行完成后会直接退出 CLI。
 
-推荐做法是在浏览器登录后，复制 `wenku8.net` 的完整 Cookie，写入 `.wenku8-cookie`：
+榜单命令别名：
+
+```text
+day    今日热榜       sort=dayvisit
+month  本月热点       sort=monthvisit
+all    热门轻小说     sort=allvisit
+good   最受关注       sort=goodnum
+new    新书一览       sort=postdate
+```
+
+搜索、榜单、详情和下载等需要访问 wenku8 的命令都必须提供 Cookie。Cookie 读取优先级为：`--cookie` 参数 > `WENKU8_COOKIE` 环境变量 > `--cookie-file` 指定文件 > 当前目录 `.wenku8-cookie` > 用户配置目录 Cookie。没有任何 Cookie 时，CLI 会提前提示先执行 `wenku8 login`，不会继续发起请求。
+
+推荐做法是在浏览器登录后，复制 `www.wenku8.net` 域名下的完整 Cookie，然后执行：
+
+```bash
+wenku8 login
+```
+
+它会把 Cookie 写入用户配置目录，npm 包更新、重新安装或全局安装都不会把 Cookie 打进包产物里：
+
+```text
+macOS   ~/Library/Application Support/wenku8/cookie
+Linux   ${XDG_CONFIG_HOME:-~/.config}/wenku8/cookie
+Windows %APPDATA%\wenku8\cookie
+```
+
+可以用 `wenku8 config` 查看当前机器实际路径，用 `wenku8 logout` 删除。`wenku8 config` 也会显示默认 EPUB 输出目录和工作区目录。文件内容兼容直接写原始 Cookie：
 
 ```text
 PHPSESSID=...; jieqiUserInfo=...; jieqiVisitInfo=...
@@ -81,11 +130,21 @@ PHPSESSID=...; jieqiUserInfo=...; jieqiVisitInfo=...
 WENKU8_COOKIE="PHPSESSID=...; jieqiUserInfo=...; jieqiVisitInfo=..."
 ```
 
-如果站点返回 Cloudflare challenge，CLI 会明确报错。请先在浏览器中完成验证，然后复制当前 `wenku8.net` Cookie 写入 `.wenku8-cookie`，或使用 `--cookie` / `WENKU8_COOKIE` 传入；本工具不会尝试绕过站点防护。
+如果只想给某个项目临时使用，也可以放在当前目录的 `.wenku8-cookie`。这个文件已被 `.gitignore` 忽略。
+
+如果站点返回 Cloudflare challenge，CLI 会明确报错。请先在浏览器中完成验证，然后复制当前 `wenku8.net` Cookie 后运行 `wenku8 login`，或使用 `--cookie` / `WENKU8_COOKIE` 传入；本工具不会尝试绕过站点防护。
 
 ## 数据与恢复
 
-默认工作区为 `downloads/<book-id>/`：
+默认不再把 EPUB 和工作区写入当前目录，而是写入用户级目录，方便长期管理已下载小说：
+
+```text
+macOS   ~/Library/Application Support/wenku8/downloads
+Linux   ${XDG_CONFIG_HOME:-~/.config}/wenku8/downloads
+Windows %APPDATA%\wenku8\downloads
+```
+
+可恢复工作区默认为同一用户目录下的 `workspace/<book-id>/`：
 
 ```text
 manifest.json          每个网络资源的状态、尝试次数、大小和 SHA-256

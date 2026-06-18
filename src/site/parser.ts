@@ -5,6 +5,22 @@ import { stableId } from '../domain/ids.js';
 import type { Book, BookSummary, Chapter, ContentBlock, Volume } from '../domain/book.js';
 
 const BASE_URL = 'https://www.wenku8.net';
+const DETAIL_LABELS = [
+  '文库分类',
+  '小说分类',
+  '小说作者',
+  '作者',
+  '文章状态',
+  '小说状态',
+  '最后更新',
+  '更新时间',
+  '全文长度',
+  '全文字数',
+  '作品Tags',
+  '作品热度',
+  '最近章节',
+  '内容简介',
+];
 
 export type BookDetails = Omit<Book, 'volumes' | 'assets'>;
 
@@ -29,9 +45,10 @@ export function parseBookDetails(html: string, bookId: number, sourceUrl: string
 
   const coverHref =
     content.find('img').first().attr('data-src') ?? content.find('img').first().attr('src');
-  const description = clean(
-    content.find('#contentmain').text() || content.find('span').last().text() || '',
-  );
+  const description = extractBookDescription($, content);
+  const tags = extractFollowingText($, content, '作品Tags');
+  const hotness = extractFollowingText($, content, '作品热度');
+  const latestChapter = extractFollowingText($, content, '最近章节');
 
   return {
     id: bookId,
@@ -47,8 +64,53 @@ export function parseBookDetails(html: string, bookId: number, sourceUrl: string
       status: label(pageText, ['文章状态', '小说状态']),
       updatedAt: label(pageText, ['最后更新', '更新时间']),
       length: label(pageText, ['全文长度', '全文字数']),
+      ...(tags ? { tags } : {}),
+      ...(hotness ? { hotness } : {}),
+      ...(latestChapter ? { latestChapter } : {}),
     },
   };
+}
+
+function extractBookDescription($: cheerio.CheerioAPI, content: cheerio.Cheerio<AnyNode>): string {
+  const labeled = findHottextLabel($, content, '内容简介');
+  const nextSpan = labeled.nextAll('span').first();
+  const description = textWithBreaks(nextSpan);
+  if (description) return description;
+  return clean(content.find('#contentmain').text() || '');
+}
+
+function textWithBreaks(selection: cheerio.Cheerio<AnyNode>): string {
+  const clone = selection.clone();
+  clone.find('br').replaceWith('\n');
+  return clean(clone.text());
+}
+
+function extractFollowingText(
+  $: cheerio.CheerioAPI,
+  content: cheerio.Cheerio<AnyNode>,
+  name: string,
+): string {
+  const labeled = findHottextLabel($, content, name);
+  if (labeled.length > 0) {
+    const sameText = clean(labeled.text()).replace(new RegExp(`^${name}\\s*[：:]\\s*`), '');
+    if (sameText) return sameText;
+    const nextSpan = clean(labeled.nextAll('span').first().text());
+    if (nextSpan) return nextSpan;
+    const nextAnchor = clean(labeled.nextAll('a').first().text());
+    if (nextAnchor) return nextAnchor;
+  }
+  return label(content.text(), [name]);
+}
+
+function findHottextLabel(
+  $: cheerio.CheerioAPI,
+  content: cheerio.Cheerio<AnyNode>,
+  name: string,
+): cheerio.Cheerio<AnyNode> {
+  return content
+    .find('span')
+    .filter((_index, element) => clean($(element).text()).startsWith(name))
+    .first();
 }
 
 export function parseCatalogue(html: string, catalogueUrl: string): Volume[] {
@@ -224,21 +286,184 @@ function imageUrlFromText(value?: string): string | undefined {
 export function parseSearchResults(html: string): BookSummary[] {
   const $ = cheerio.load(html, { xml: false });
   const results = new Map<number, BookSummary>();
-  $('a[href*="/book/"][href$=".htm"]').each((_index, anchor) => {
-    const href = $(anchor).attr('href') ?? '';
-    const match = /\/book\/(\d+)\.htm$/i.exec(href);
-    const title = clean($(anchor).attr('title') ?? $(anchor).text());
-    if (match?.[1] && title) results.set(Number(match[1]), { id: Number(match[1]), title });
-  });
+  const cards = $('div[style]')
+    .filter((_index, element) => isSearchResultCard($(element).attr('style') ?? ''))
+    .toArray();
+
+  for (const card of cards) {
+    const summary = parseSearchResultCard($, $(card));
+    if (summary) results.set(summary.id, summary);
+  }
+
+  if (results.size === 0) {
+    $('a[href*="/book/"][href$=".htm"][tiptitle], a[href*="/book/"][href$=".htm"][title]').each(
+      (_index, anchor) => {
+        const summary = parseSearchResultCard($, $(anchor).parent());
+        if (summary) results.set(summary.id, summary);
+      },
+    );
+  }
+
+  if (results.size === 0) {
+    $('a[href*="/book/"][href$=".htm"]').each((_index, anchor) => {
+      const summary = parseSearchResultAnchor($, $(anchor));
+      if (summary) results.set(summary.id, summary);
+    });
+  }
+
   return [...results.values()];
+}
+
+export function parseSugoiResults(html: string): BookSummary[] {
+  const $ = cheerio.load(html, { xml: false });
+  const results: BookSummary[] = [];
+
+  $('table.grid').each((_tableIndex, table) => {
+    const section = clean($(table).find('caption').first().text()).replace(/^这本轻小说真厉害！\d+\s*/, '');
+    let rank = 0;
+    $(table)
+      .find('div[style*="WIDTH: 19%"], div[style*="width: 19%"]')
+      .each((_index, entry) => {
+        rank += 1;
+        const root = $(entry);
+        const anchor = root.find('a[href*="/book/"][href$=".htm"]').first();
+        const href = anchor.attr('href') ?? '';
+        const match = /\/book\/(\d+)\.htm$/i.exec(href);
+        if (!match?.[1]) return;
+        const title = clean(
+          anchor.attr('title') ??
+            root
+              .find('br')
+              .first()
+              .nextAll('a[href*="/book/"][href$=".htm"]')
+              .first()
+              .text() ??
+            anchor.text(),
+        );
+        if (!title) return;
+        const summary: BookSummary = {
+          id: Number(match[1]),
+          title,
+        };
+        if (section) summary.category = section;
+        summary.status = `第 ${rank} 名`;
+        results.push(summary);
+      });
+  });
+
+  return results;
+}
+
+function parseSearchResultCard(
+  $: cheerio.CheerioAPI,
+  root: cheerio.Cheerio<AnyNode>,
+): BookSummary | undefined {
+  const anchor = preferredBookAnchor($, root);
+  if (!anchor) return undefined;
+  const href = anchor.attr('href') ?? '';
+  const match = /\/book\/(\d+)\.htm$/i.exec(href);
+  const title = searchResultTitle(anchor);
+  if (!match?.[1] || !title) return undefined;
+
+  const paragraphs = root
+    .find('p')
+    .toArray()
+    .map((paragraph) => clean($(paragraph).text()));
+  const authorCategory = paragraphs.find((text) => /作者\s*:/.test(text));
+  const updateInfo = paragraphs.find((text) => /更新\s*:/.test(text) || /字数\s*:/.test(text));
+  const tags = clean(root.find('p span[style*="font-weight:bold"]').first().text())
+    .split(/\s+/)
+    .filter(Boolean);
+  const description = paragraphs
+    .find((text) => text.startsWith('简介:') || text.startsWith('简介：'))
+    ?.replace(/^简介[：:]\s*/, '');
+  const notice = paragraphs
+    .find((text) => text.startsWith('公告:') || text.startsWith('公告：'))
+    ?.replace(/^公告[：:]\s*/, '');
+  const status =
+    paragraphs.find((text) => /已完结|连载中|已动画化/.test(text) && !/更新\s*:/.test(text)) ??
+    updateInfo
+      ?.split('/')
+      .map((part) => clean(part))
+      .find((part) => /已完结|连载中/.test(part));
+
+  const summary: BookSummary = {
+    id: Number(match[1]),
+    title,
+  };
+  const author = searchField(authorCategory, '作者');
+  const category = searchField(authorCategory, '分类');
+  const updatedAt = searchField(updateInfo, '更新');
+  const length = searchField(updateInfo, '字数');
+  if (author) summary.author = author;
+  if (category) summary.category = category;
+  if (updatedAt) summary.updatedAt = updatedAt;
+  if (length) summary.length = length;
+  if (status) summary.status = status;
+  if (tags.length > 0) summary.tags = tags;
+  if (description) summary.description = description;
+  if (notice) summary.notice = notice;
+  return summary;
+}
+
+function parseSearchResultAnchor(
+  $: cheerio.CheerioAPI,
+  anchor: cheerio.Cheerio<AnyNode>,
+): BookSummary | undefined {
+  return parseSearchResultCard($, anchor.parent());
+}
+
+function preferredBookAnchor(
+  $: cheerio.CheerioAPI,
+  root: cheerio.Cheerio<AnyNode>,
+): cheerio.Cheerio<AnyNode> | undefined {
+  const anchors = root.find('a[href*="/book/"][href$=".htm"]').toArray().map((anchor) => $(anchor));
+  const candidates = [
+    anchors.find((anchor) => Boolean(anchor.attr('tiptitle'))),
+    anchors.find((anchor) => anchor.parent().is('b') && !isActionLink(anchor.text())),
+    anchors.find((anchor) => Boolean(anchor.attr('title'))),
+    anchors.find((anchor) => !isActionLink(anchor.text())),
+  ];
+  return candidates.find((anchor) => anchor && anchor.length > 0);
+}
+
+function searchResultTitle(anchor: cheerio.Cheerio<AnyNode>): string {
+  const title = clean(anchor.attr('tiptitle') ?? anchor.attr('title') ?? anchor.text());
+  return isActionLink(title) ? '' : title;
+}
+
+function isSearchResultCard(style: string): boolean {
+  return /width\s*:\s*373px/i.test(style) && /height\s*:\s*136px/i.test(style);
+}
+
+function isActionLink(value: string): boolean {
+  return /^(?:我要阅读|加入书架|推荐本书)$/.test(clean(value));
+}
+
+function searchField(value: string | undefined, field: string): string | undefined {
+  if (!value) return undefined;
+  for (const segment of value.split('/')) {
+    const match = new RegExp(`${field}\\s*[:：]\\s*(.+)`).exec(segment);
+    if (match?.[1]) return clean(match[1]);
+  }
+  return undefined;
 }
 
 function label(text: string, names: string[]): string {
   for (const name of names) {
-    const match = new RegExp(`${name}\\s*[：:]\\s*([^\\n\\r]+)`).exec(text);
+    const otherLabels = DETAIL_LABELS.filter((labelName) => labelName !== name)
+      .map(escapeRegExp)
+      .join('|');
+    const match = new RegExp(
+      `${escapeRegExp(name)}\\s*[：:]\\s*([\\s\\S]*?)(?=\\s*(?:${otherLabels})\\s*[：:]|$)`,
+    ).exec(text);
     if (match?.[1]) return clean(match[1]);
   }
   return '';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function clean(value: string): string {

@@ -23,8 +23,11 @@ export interface DownloadOptions {
 export interface ProgressEvent {
   phase: 'metadata' | 'chapters' | 'images' | 'epub';
   message: string;
+  kind?: 'start' | 'complete' | 'failed' | 'retry' | 'info';
   completed?: number;
   total?: number;
+  sourceUrl?: string;
+  error?: string;
 }
 
 export interface DownloadResult {
@@ -58,7 +61,6 @@ export class Downloader {
     const volumes = await this.loadCatalogue(workspace, details.catalogueUrl, options.signal);
 
     const chapterCount = volumes.reduce((total, volume) => total + volume.chapters.length, 0);
-    let completedChapters = 0;
     const chapterTasks = volumes.flatMap((volume) =>
       volume.chapters.map((chapter, index) => ({ volume, chapter, index })),
     );
@@ -69,6 +71,7 @@ export class Downloader {
     const chapterRetryRounds = options.chapterRetryRounds ?? 2;
     let pendingChapterTasks = chapterTasks;
     let chapterFailures: Array<{ task: ChapterTask; error: unknown }> = [];
+    const completedChapterIds = new Set<string>();
 
     for (let round = 0; round <= chapterRetryRounds; round += 1) {
       chapterFailures = [];
@@ -83,16 +86,40 @@ export class Downloader {
           const task = pendingChapterTasks[nextChapterIndex];
           nextChapterIndex += 1;
           if (!task) return;
-          let taskError: unknown;
           try {
+            emit({
+              phase: 'chapters',
+              kind: 'start',
+              message: chapterLabel(task),
+              completed: completedChapterIds.size,
+              total: chapterCount,
+              sourceUrl: task.chapter.sourceUrl,
+            });
             task.volume.chapters[task.index] = await this.loadChapter(
               workspace,
               task.chapter,
               chapterSignal,
             );
+            completedChapterIds.add(task.chapter.id);
+            emit({
+              phase: 'chapters',
+              kind: 'complete',
+              message: chapterLabel(task),
+              completed: completedChapterIds.size,
+              total: chapterCount,
+              sourceUrl: task.chapter.sourceUrl,
+            });
           } catch (error) {
-            taskError = error;
             if (error instanceof CopyrightUnavailableError) {
+              emit({
+                phase: 'chapters',
+                kind: 'failed',
+                message: chapterLabel(task),
+                completed: completedChapterIds.size,
+                total: chapterCount,
+                sourceUrl: task.chapter.sourceUrl,
+                error: errorMessage(error),
+              });
               if (!fatalChapterError) {
                 fatalChapterError = error;
                 chapterAbort.abort(error);
@@ -102,15 +129,14 @@ export class Downloader {
             }
             if (!chapterSignal.aborted) {
               chapterFailures.push({ task, error });
-            }
-          } finally {
-            if (!fatalChapterError || taskError === fatalChapterError) {
-              completedChapters += 1;
               emit({
                 phase: 'chapters',
-                message: round === 0 ? task.chapter.title : `重试 ${round}: ${task.chapter.title}`,
-                completed: Math.min(completedChapters, chapterCount),
+                kind: 'failed',
+                message: chapterLabel(task),
+                completed: completedChapterIds.size,
                 total: chapterCount,
+                sourceUrl: task.chapter.sourceUrl,
+                error: errorMessage(error),
               });
             }
           }
@@ -123,6 +149,13 @@ export class Downloader {
       );
       if (chapterFailures.length === 0) break;
       if (round === chapterRetryRounds) break;
+      emit({
+        phase: 'chapters',
+        kind: 'retry',
+        message: `第 ${round + 1} 轮重试 ${chapterFailures.length} 个章节`,
+        completed: completedChapterIds.size,
+        total: chapterCount,
+      });
       await delay(options.chapterRetryDelayMs ?? 15_000, options.signal);
       pendingChapterTasks = chapterFailures.map((failure) => failure.task);
     }
@@ -352,6 +385,10 @@ export class Downloader {
       throw error;
     }
   }
+}
+
+function chapterLabel(task: ChapterTask): string {
+  return `${task.volume.title} / ${task.chapter.title}`;
 }
 
 function errorMessage(error: unknown): string {

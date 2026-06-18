@@ -18,6 +18,7 @@ export interface HttpClientOptions {
   rateLimitCooldownMs?: number;
   cookie?: string;
   userAgent?: string;
+  onRetry?: (event: HttpRetryEvent) => void;
 }
 
 export interface HttpClientStats {
@@ -33,6 +34,15 @@ export interface HttpClientStats {
   statusCodes: Record<string, number>;
 }
 
+export interface HttpRetryEvent {
+  url: string;
+  attemptNumber: number;
+  retriesLeft: number;
+  retriesConsumed: number;
+  error: Error;
+  status?: number;
+}
+
 export class HttpClient {
   private readonly queue: PQueue;
   private readonly fetchWithCookies: typeof fetch;
@@ -43,6 +53,7 @@ export class HttpClient {
   private readonly cookie: string | undefined;
   private readonly userAgent: string;
   private readonly rateLimitCooldownMs: number;
+  private readonly onRetry: ((event: HttpRetryEvent) => void) | undefined;
   private readonly rateLimitUntil = new Map<string, number>();
   private useCurlTransport = false;
   private readonly requestStats: HttpClientStats = {
@@ -69,6 +80,7 @@ export class HttpClient {
     this.retries = options.retries ?? 4;
     this.minDelayMs = options.minDelayMs ?? 800;
     this.rateLimitCooldownMs = options.rateLimitCooldownMs ?? 15_000;
+    this.onRetry = options.onRetry;
     const jar = new CookieJar();
     this.fetchWithCookies = makeFetchCookie(fetch, jar);
     this.cookie = options.cookie?.trim();
@@ -114,8 +126,18 @@ export class HttpClient {
           maxTimeout: 10_000,
           factor: 2,
           randomize: true,
-          onFailedAttempt: ({ retriesLeft }) => {
-            if (retriesLeft > 0) this.requestStats.automaticRetries += 1;
+          onFailedAttempt: ({ error, attemptNumber, retriesLeft, retriesConsumed }) => {
+            if (retriesLeft > 0) {
+              this.requestStats.automaticRetries += 1;
+              this.onRetry?.({
+                url,
+                attemptNumber,
+                retriesLeft,
+                retriesConsumed,
+                error,
+                ...(error instanceof HttpStatusError ? { status: error.status } : {}),
+              });
+            }
           },
         },
       ),
